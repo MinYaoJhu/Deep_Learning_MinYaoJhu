@@ -1,0 +1,341 @@
+---
+title: "Chapter 3"
+author: "Min-Yao Jhu"
+date: "1/16/2021"
+output: html_document
+---
+
+## load lib
+
+```{r}
+library(keras)
+library(reticulate)
+use_condaenv("r-reticulate")
+```
+# Chapter 3. Getting started with neural networks
+
+## 3.1. ANATOMY OF A NEURAL NETWORK
+
+### 3.1.1. Layers: the building blocks of deep learning
+
+```{r}
+layer <- layer_dense(units = 32, input_shape = c(784))
+```
+
+```{r}
+model <- keras_model_sequential() %>%
+  layer_dense(units = 32, input_shape = c(784)) %>%
+  layer_dense(units = 32)
+```
+
+### 3.1.2. Models: networks of layers
+
+### 3.1.3. Loss functions and optimizers: keys to configuring the learning process
+
+## 3.2. INTRODUCTION TO KERAS
+
+### 3.2.1. Keras, TensorFlow, Theano, and CNTK
+
+### 3.2.2. Installing Keras
+
+### 3.2.3. Developing with Keras: a quick overview
+
+## 3.3. SETTING UP A DEEP-LEARNING WORKSTATION
+
+### 3.3.1. Getting Keras running: two options
+
+### 3.3.2. Running deep-learning jobs in the cloud: pros and cons
+
+### 3.3.3. What is the best GPU for deep learning?
+
+## 3.4. CLASSIFYING MOVIE REVIEWS: A BINARY CLASSIFICATION EXAMPLE
+
+### 3.4.1. The IMDB dataset
+
+#### Listing 3.1. Loading the IMDB dataset
+
+```{r}
+library(keras)
+
+imdb <- dataset_imdb(num_words = 10000)
+c(c(train_data, train_labels), c(test_data, test_labels)) %<-% imdb
+```
+
+```{r}
+str(train_data[[1]])
+```
+
+```{r}
+train_labels[[1]]
+```
+
+```{r}
+max(sapply(train_data, max))
+```
+
+### 3.4.2. Preparing the data
+
+#### Listing 3.2. Encoding the integer sequences into a binary matrix
+
+```{r}
+vectorize_sequences <- function(sequences, dimension = 10000) {
+  results <- matrix(0, nrow = length(sequences), ncol = dimension)    
+  for (i in 1:length(sequences))
+    results[i, sequences[[i]]] <- 1                                   
+  results
+}
+
+x_train <- vectorize_sequences(train_data)
+x_test <- vectorize_sequences(test_data)
+```
+
+```{r}
+str(x_train[1,])
+```
+
+```{r}
+y_train <- as.numeric(train_labels)
+y_test <- as.numeric(test_labels)
+```
+
+### 3.4.3. Building your network
+
+```{r}
+library(keras)
+
+model <- keras_model_sequential() %>%
+  layer_dense(units = 16, activation = "relu", input_shape = c(10000)) %>%
+  layer_dense(units = 16, activation = "relu") %>%
+  layer_dense(units = 1, activation = "sigmoid")
+```
+
+#### Listing 3.4. Compiling the model
+
+```{r}
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+```
+
+#### Listing 3.5. Configuring the optimizer
+
+```{r}
+model %>% compile(
+  optimizer = optimizer_rmsprop(lr=0.001),
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+```
+
+#### Listing 3.6. Using custom losses and metrics
+
+```{r}
+model %>% compile(
+  optimizer = optimizer_rmsprop(lr = 0.001),
+  loss = loss_binary_crossentropy,
+  metrics = metric_binary_accuracy
+)
+```
+
+### 3.4.4. Validating your approach
+
+#### Listing 3.7. Setting aside a validation set
+
+```{r}
+val_indices <- 1:10000
+
+x_val <- x_train[val_indices,]
+partial_x_train <- x_train[-val_indices,]
+y_val <- y_train[val_indices]
+partial_y_train <- y_train[-val_indices]
+```
+
+#### Listing 3.8. Training your model
+
+```{r}
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+history <- model %>% fit(
+  partial_x_train,
+  partial_y_train,
+  epochs = 20,
+  batch_size = 512,
+  validation_data = list(x_val, y_val)
+)
+```
+
+```{r}
+str(history)
+```
+
+```{r}
+plot(history)
+```
+#### Training history with the plot() method
+
+```{r}
+history_df <- as.data.frame(history)
+str(history_df)
+```
+#### Listing 3.9. Retraining a model from scratch
+
+```{r}
+model <- keras_model_sequential() %>%
+  layer_dense(units = 16, activation = "relu", input_shape = c(10000)) %>%
+  layer_dense(units = 16, activation = "relu") %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+model %>% fit(x_train, y_train, epochs = 4, batch_size = 512)
+results <- model %>% evaluate(x_test, y_test)
+```
+
+```{r}
+results
+```
+
+### 3.4.5. Using a trained network to generate predictions on new data
+
+### 3.4.6. Further experiments
+
+1. You used two hidden layers. Try using one or three hidden layers, and see how doing so affects validation and test accuracy.
+
+> 1 layer, a little bit better
+
+```{r}
+model1 <- keras_model_sequential() %>%
+  layer_dense(units = 16, activation = "relu", input_shape = c(10000)) %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+model1 %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+model1 %>% fit(x_train, y_train, epochs = 4, batch_size = 512)
+results <- model1 %>% evaluate(x_test, y_test)
+results
+```
+
+> 3 layers, not better
+
+```{r}
+model3 <- keras_model_sequential() %>%
+  layer_dense(units = 16, activation = "relu", input_shape = c(10000)) %>%
+  layer_dense(units = 16, activation = "relu") %>%
+  layer_dense(units = 16, activation = "relu") %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+model3 %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+model3 %>% fit(x_train, y_train, epochs = 4, batch_size = 512)
+results <- model3 %>% evaluate(x_test, y_test)
+results
+```
+
+2. Try using layers with more hidden units or fewer hidden units: 32 units, 64 units, and so on.
+
+> 32 units, not better, about the same
+
+```{r}
+model_32 <- keras_model_sequential() %>%
+  layer_dense(units = 32, activation = "relu", input_shape = c(10000)) %>%
+  layer_dense(units = 32, activation = "relu") %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+model_32 %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+model_32 %>% fit(x_train, y_train, epochs = 4, batch_size = 512)
+results <- model_32 %>% evaluate(x_test, y_test)
+results
+```
+
+> 64 units, worse
+
+```{r}
+model_64 <- keras_model_sequential() %>%
+  layer_dense(units = 64, activation = "relu", input_shape = c(10000)) %>%
+  layer_dense(units = 64, activation = "relu") %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+model_64 %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+model_64 %>% fit(x_train, y_train, epochs = 4, batch_size = 512)
+results <- model_64 %>% evaluate(x_test, y_test)
+results
+```
+
+
+
+3. Try using the mse loss function instead of binary_crossentropy.
+
+> mse loss function, not better
+
+```{r}
+model_MSE <- keras_model_sequential() %>%
+  layer_dense(units = 16, activation = "relu", input_shape = c(10000)) %>%
+  layer_dense(units = 16, activation = "relu") %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+model_MSE %>% compile(
+  optimizer = "rmsprop",
+  loss = "mse",
+  metrics = c("accuracy")
+)
+
+model_MSE %>% fit(x_train, y_train, epochs = 4, batch_size = 512)
+results <- model_MSE %>% evaluate(x_test, y_test)
+results
+```
+
+
+4. Try using the tanh activation (an activation that was popular in the early days of neural networks) instead of relu.
+
+> tanh activation, not better
+
+```{r}
+model_tanh <- keras_model_sequential() %>%
+  layer_dense(units = 16, activation = "tanh", input_shape = c(10000)) %>%
+  layer_dense(units = 16, activation = "tanh") %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+model_tanh %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+model_tanh %>% fit(x_train, y_train, epochs = 4, batch_size = 512)
+results <- model_tanh %>% evaluate(x_test, y_test)
+results
+```
+
+
+
+
+### 3.4.7. Wrapping up
+

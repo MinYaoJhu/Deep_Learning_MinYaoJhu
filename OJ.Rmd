@@ -1,0 +1,146 @@
+---
+title: "OJ"
+author: "Min-Yao"
+date: "2021/1/16"
+output: html_document
+---
+
+## OJ
+
+```{r}
+library(tidyverse)
+library(ISLR)
+data(OJ)
+?OJ
+```
+
+```{r}
+OJ
+```
+
+```{r}
+OJ %>% select(StoreID, STORE) # these are redundant
+```
+
+because store is categorical we need to turn that into a series of dummy variables.
+```{r}
+store_cat <- OJ %>% select(StoreID) %>%
+  mutate(row=1:nrow(.),data=1) %>%
+  pivot_wider(id_cols = row, names_from=StoreID, values_from=data, values_fill=0, names_prefix="Store")
+```
+
+```{r}
+OJ <- OJ %>% select(-StoreID, -STORE, -Store7) %>% cbind(store_cat)
+OJ
+```
+
+### split into test and train and other formatting
+
+```{r}
+set.seed(111820)
+train <- sample(1:nrow(OJ), size = 800)
+oj.train <- OJ[train,]
+oj.test <- OJ[-train,]
+```
+
+```{r}
+oj.train.label <- oj.train %>% select(Purchase) %>% mutate(Purchase=ifelse(Purchase=="CH", 0, 1)) %>% pull(Purchase)
+oj.test.label <- oj.test %>% select(Purchase) %>% mutate(Purchase=ifelse(Purchase=="CH", 0, 1)) %>% pull(Purchase)
+```
+
+scale it
+```{r}
+oj.train <- oj.train %>% select(-Purchase)
+oj.test <- oj.test %>% select(-Purchase)
+
+oj.mean <- apply(oj.train, 2, mean)
+oj.std <- apply(oj.test, 2, sd)
+
+oj.train <- scale(oj.train, center=oj.mean, scale=oj.std)
+oj.test <- scale(oj.test, center=oj.mean, scale=oj.std)
+```
+
+
+### validation set
+
+```{r}
+set.seed(12312)
+val <- sample(1:nrow(oj.train), size = 100)
+
+oj.train.val <- oj.train[val,]
+oj.train.label.val <- oj.train.label[val]
+
+oj.train.part <- oj.train[-val,]
+oj.train.label.part <- oj.train.label[-val]
+
+```
+
+
+### set up and run the model!
+
+```{r}
+model <- keras_model_sequential() %>% 
+  layer_dense(units = 64, activation = "relu", input_shape = ncol(oj.train) ) %>% 
+  layer_dense(units = 16, activation = "relu") %>% 
+  layer_dense(units = 1, activation = "sigmoid")
+
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+system.time(history <- model %>% fit(
+  oj.train.part,
+  oj.train.label.part,
+  epochs = 100,
+  batch_size = 256,
+  validation_data = list(oj.train.val, oj.train.label.val),
+  verbose=0 # delete this if you want real-time plots
+))
+```
+
+```{r}
+plot(history)
+```
+
+60 seems good, re do with 60 epochs and full training:
+
+```{r}
+model <- keras_model_sequential() %>% 
+  layer_dense(units = 64, activation = "relu", input_shape = ncol(oj.train) ) %>% 
+  layer_dense(units = 16, activation = "relu") %>% 
+  layer_dense(units = 1, activation = "sigmoid")
+
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+system.time(history <- model %>% fit(
+  oj.train,
+  oj.train.label,
+  epochs = 100,
+  batch_size = 256,
+  verbose=0
+))
+```
+
+
+```{r}
+plot(history)
+```
+
+
+```{r}
+results <- model %>% evaluate(oj.test, oj.test.label)
+
+results
+```
+
+Accuracy is 84.8%, which is a little bit better than the trees, although I also modified the input data.
+
+
