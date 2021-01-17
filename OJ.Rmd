@@ -2,7 +2,9 @@
 title: "OJ"
 author: "Min-Yao"
 date: "2021/1/16"
-output: html_document
+output: 
+  html_document: 
+    keep_md: yes
 ---
 
 ## OJ
