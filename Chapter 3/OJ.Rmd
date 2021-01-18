@@ -14,16 +14,16 @@ library(tidyverse)
 library(ISLR)
 library(tree)
 data(OJ)
-?OJ
+#?OJ
 ```
 
 ```{r}
-OJ
+head(OJ)
 summary(OJ)
 ```
 
 ```{r}
-OJ %>% select(StoreID, STORE)
+OJ %>% select(StoreID, STORE) %>% head()
 ```
 > StoreID and STORE are redundant
 > because store is categorical we need to turn that into a series of dummy variables.
@@ -32,12 +32,12 @@ OJ %>% select(StoreID, STORE)
 store_cat <- OJ %>% select(StoreID) %>%
   mutate(row=1:nrow(.),data=1) %>%
   pivot_wider(id_cols = row, names_from=StoreID, values_from=data, values_fill=0, names_prefix="Store")
-store_cat
+head(store_cat)
 ```
 
 ```{r}
 OJ <- OJ %>% select(-StoreID, -STORE, -Store7) %>% cbind(store_cat)
-OJ
+head(OJ)
 ```
 
 ## (a) Create a training set containing a random sample of 800 observations, and a test set containing the remaining observations.
@@ -199,4 +199,4 @@ results <- model %>% evaluate(OJ.test, OJ.test.label)
 results
 ```
 
-> Accuracy is 82.96%, which is a little bit better than the trees (82.59%).
+> Accuracy is 83.33%, which is a little bit better than the trees (82.59%).
