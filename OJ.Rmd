@@ -200,5 +200,3 @@ results
 ```
 
 > Accuracy is 82.96%, which is a little bit better than the trees (82.59%).
-
-
