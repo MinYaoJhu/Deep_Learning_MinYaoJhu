@@ -2,7 +2,9 @@
 title: "cancer"
 author: "Min-Yao"
 date: "1/17/2021"
-output: html_document
+output: 
+  html_document: 
+    keep_md: yes
 ---
 
 ```{r}
