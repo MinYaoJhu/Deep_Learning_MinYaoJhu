@@ -61,6 +61,18 @@ summary(tree.OJ)
 
 > Misclassification error rate: 0.1775
 
+## (e) Predict the response on the test data, and produce a confusion matrix comparing the test labels to the predicted test labels. What is the test error rate?
+
+```{r}
+tree.pred=predict(tree.OJ,OJ.test,type="class")
+purchase.test=OJ.test$Purchase
+table(tree.pred,purchase.test)
+(135+88)/270
+1-((135+88)/270)
+```
+
+> Accuracy is 82.59%
+
 ## Deep learning method
 
 ```{r}
@@ -88,44 +100,37 @@ OJ.test <- OJ.test %>% select(-Purchase)
 str(OJ.test)
 ```
 
+> scale it
 
-scale it
 ```{r}
-# OJ.train <- OJ.train %>% select(-Purchase)
-# OJ.test <- OJ.test %>% select(-Purchase)
-# 
-# oj.mean <- apply(OJ.train, 2, mean)
-# oj.std <- apply(OJ.test, 2, sd)
-# 
-# OJ.train <- scale(OJ.train, center=oj.mean, scale=oj.std)
-# OJ.test <- scale(OJ.test, center=oj.mean, scale=oj.std)
+oj.mean <- apply(OJ.train, 2, mean)
+oj.std <- apply(OJ.test, 2, sd)
+
+OJ.train <- scale(OJ.train, center=oj.mean, scale=oj.std)
+OJ.test <- scale(OJ.test, center=oj.mean, scale=oj.std)
+
+str(OJ.train)
+str(OJ.test)
 ```
 
 #### Listing 3.15. Setting aside a validation set
 
 ```{r}
-val_indices <- 1:100
+set.seed(10)
+val_indices <- sample(1:nrow(OJ.train), size = 100)
 
 OJ.train_val <- OJ.train[val_indices,]
 partial_OJ.train <- OJ.train[-val_indices,]
+
+# OJ.test <- data.matrix(OJ.test, rownames.force = NA)
+# OJ.train <- data.matrix(OJ.train, rownames.force = NA)
+# OJ.train_val <- data.matrix(OJ.train_val, rownames.force = NA)
+# partial_OJ.train <- data.matrix(partial_OJ.train, rownames.force = NA)
 
 OJ.train_val.label <- OJ.train.label[val_indices]
 partial_OJ.train.label <- OJ.train.label[-val_indices]
 
 ```
-
-```{r}
-# set.seed(12312)
-# val <- sample(1:nrow(OJ.train), size = 100)
-# 
-# OJ.train.val <- OJ.train[val,]
-# OJ.train.label.val <- OJ.train.label[val]
-# 
-# OJ.train.part <- OJ.train[-val,]
-# OJ.train.label.part <- OJ.train.label[-val]
-
-```
-
 
 ### set up and run the model!
 
@@ -145,7 +150,7 @@ model %>% compile(
 system.time(history <- model %>% fit(
   partial_OJ.train,
   partial_OJ.train.label,
-  epochs = 20,
+  epochs = 100,
   batch_size = 256,
   validation_data = list(OJ.train_val, OJ.train_val.label)
 ))
@@ -159,11 +164,11 @@ str(history)
 plot(history)
 ```
 
-60 seems good, re do with 60 epochs and full training:
+> I choose 56, run with 56 epochs and full training:
 
 ```{r}
 model <- keras_model_sequential() %>% 
-  layer_dense(units = 64, activation = "relu", input_shape = ncol(OJ.train) ) %>% 
+  layer_dense(units = 16, activation = "relu", input_shape = ncol(OJ.train) ) %>% 
   layer_dense(units = 16, activation = "relu") %>% 
   layer_dense(units = 1, activation = "sigmoid")
 
@@ -177,9 +182,8 @@ model %>% compile(
 system.time(history <- model %>% fit(
   OJ.train,
   OJ.train.label,
-  epochs = 100,
-  batch_size = 256,
-  verbose=0
+  epochs = 56,
+  batch_size = 256
 ))
 ```
 
@@ -195,6 +199,6 @@ results <- model %>% evaluate(OJ.test, OJ.test.label)
 results
 ```
 
-Accuracy is 84.8%, which is a little bit better than the trees, although I also modified the input data.
+> Accuracy is 82.96%, which is a little bit better than the trees (82.59%).
 
 
