@@ -225,9 +225,237 @@ model %>% fit(
 
 1. Try using larger or smaller layers: 32 units, 128 units, and so on.
 
+> smaller layers: 32 units, not better
+
+```{r}
+model <- keras_model_sequential() %>%
+  layer_dense(units = 32, activation = "relu", input_shape = c(10000)) %>%
+  layer_dense(units = 32, activation = "relu") %>%
+  layer_dense(units = 46, activation = "softmax")
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "categorical_crossentropy",
+  metrics = c("accuracy")
+)
+
+val_indices <- 1:1000
+
+x_val <- x_train[val_indices,]
+partial_x_train <- x_train[-val_indices,]
+
+y_val <- one_hot_train_labels[val_indices,]
+partial_y_train = one_hot_train_labels[-val_indices,]
+
+history <- model %>% fit(
+  partial_x_train,
+  partial_y_train,
+  epochs = 20,
+  batch_size = 512,
+  validation_data = list(x_val, y_val)
+)
+
+plot(history)
+```
+
+```{r}
+model <- keras_model_sequential() %>%
+  layer_dense(units = 32, activation = "relu", input_shape = c(10000)) %>%
+  layer_dense(units = 32, activation = "relu") %>%
+  layer_dense(units = 46, activation = "softmax")
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "categorical_crossentropy",
+  metrics = c("accuracy")
+)
+
+history <- model %>% fit(
+  partial_x_train,
+  partial_y_train,
+  epochs = 9,
+  batch_size = 512,
+  validation_data = list(x_val, y_val)
+)
+
+results <- model %>% evaluate(x_test, one_hot_test_labels)
+results
+```
+
+> larger layers: 128 units
+
+```{r}
+model <- keras_model_sequential() %>%
+  layer_dense(units = 128, activation = "relu", input_shape = c(10000)) %>%
+  layer_dense(units = 128, activation = "relu") %>%
+  layer_dense(units = 46, activation = "softmax")
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "categorical_crossentropy",
+  metrics = c("accuracy")
+)
+
+val_indices <- 1:1000
+
+x_val <- x_train[val_indices,]
+partial_x_train <- x_train[-val_indices,]
+
+y_val <- one_hot_train_labels[val_indices,]
+partial_y_train = one_hot_train_labels[-val_indices,]
+
+history <- model %>% fit(
+  partial_x_train,
+  partial_y_train,
+  epochs = 20,
+  batch_size = 512,
+  validation_data = list(x_val, y_val)
+)
+
+plot(history)
+```
+
+```{r}
+model <- keras_model_sequential() %>%
+  layer_dense(units = 128, activation = "relu", input_shape = c(10000)) %>%
+  layer_dense(units = 128, activation = "relu") %>%
+  layer_dense(units = 46, activation = "softmax")
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "categorical_crossentropy",
+  metrics = c("accuracy")
+)
+
+history <- model %>% fit(
+  partial_x_train,
+  partial_y_train,
+  epochs = 7,
+  batch_size = 512,
+  validation_data = list(x_val, y_val)
+)
+
+results <- model %>% evaluate(x_test, one_hot_test_labels)
+results
+```
+
+> a little bit better
 
 2. You used two hidden layers. Now try using a single hidden layer, or three hidden layers.
 
+```{r}
+model <- keras_model_sequential() %>%
+  layer_dense(units = 64, activation = "relu", input_shape = c(10000)) %>%
+  layer_dense(units = 46, activation = "softmax")
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "categorical_crossentropy",
+  metrics = c("accuracy")
+)
+
+val_indices <- 1:1000
+
+x_val <- x_train[val_indices,]
+partial_x_train <- x_train[-val_indices,]
+
+y_val <- one_hot_train_labels[val_indices,]
+partial_y_train = one_hot_train_labels[-val_indices,]
+
+history <- model %>% fit(
+  partial_x_train,
+  partial_y_train,
+  epochs = 20,
+  batch_size = 512,
+  validation_data = list(x_val, y_val)
+)
+
+plot(history)
+```
+
+```{r}
+model <- keras_model_sequential() %>%
+  layer_dense(units = 64, activation = "relu", input_shape = c(10000)) %>%
+  layer_dense(units = 46, activation = "softmax")
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "categorical_crossentropy",
+  metrics = c("accuracy")
+)
+
+history <- model %>% fit(
+  partial_x_train,
+  partial_y_train,
+  epochs = 8,
+  batch_size = 512,
+  validation_data = list(x_val, y_val)
+)
+
+results <- model %>% evaluate(x_test, one_hot_test_labels)
+results
+```
+
+> better
+
+```{r}
+model <- keras_model_sequential() %>%
+  layer_dense(units = 64, activation = "relu", input_shape = c(10000)) %>%
+  layer_dense(units = 64, activation = "relu") %>%
+  layer_dense(units = 64, activation = "relu") %>%
+  layer_dense(units = 46, activation = "softmax")
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "categorical_crossentropy",
+  metrics = c("accuracy")
+)
+
+val_indices <- 1:1000
+
+x_val <- x_train[val_indices,]
+partial_x_train <- x_train[-val_indices,]
+
+y_val <- one_hot_train_labels[val_indices,]
+partial_y_train = one_hot_train_labels[-val_indices,]
+
+history <- model %>% fit(
+  partial_x_train,
+  partial_y_train,
+  epochs = 20,
+  batch_size = 512,
+  validation_data = list(x_val, y_val)
+)
+
+plot(history)
+```
+
+```{r}
+model <- keras_model_sequential() %>%
+  layer_dense(units = 64, activation = "relu", input_shape = c(10000)) %>%
+  layer_dense(units = 64, activation = "relu") %>%
+  layer_dense(units = 64, activation = "relu") %>%
+  layer_dense(units = 46, activation = "softmax")
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "categorical_crossentropy",
+  metrics = c("accuracy")
+)
+
+history <- model %>% fit(
+  partial_x_train,
+  partial_y_train,
+  epochs = 7,
+  batch_size = 512,
+  validation_data = list(x_val, y_val)
+)
+
+results <- model %>% evaluate(x_test, one_hot_test_labels)
+results
+```
+
+> not better
 
 ### 3.5.9. Wrapping up
 
@@ -304,20 +532,23 @@ all_scores <- c()
 for (i in 1:k) {
   cat("processing fold #", i, "\n")
 
-  val_indices <- which(folds == i, arr.ind = TRUE)                     #1
+  val_indices <- which(folds == i, arr.ind = TRUE)                     #1 Prepares the validation data: data from partition #k
   val_data <- train_data[val_indices,]
   val_targets <- train_targets[val_indices]
-  partial_train_data <- train_data[-val_indices,]                      #2
+  partial_train_data <- train_data[-val_indices,]                      #2 Prepares the training data: data from all other partitions
   partial_train_targets <- train_targets[-val_indices]
 
-  model <- build_model()                                               #3
+  model <- build_model()                                               #3 Builds the Keras model (already compiled)
 
-  model %>% fit(partial_train_data, partial_train_targets,             #4
-                epochs = num_epochs, batch_size = 1, verbose = 0)
+  model %>% fit(partial_train_data, partial_train_targets,             
+                epochs = num_epochs, batch_size = 1, verbose = 0)      #4 Trains the model (in silent mode, verbose = 0)
 
-  results <- model %>% evaluate(val_data, val_targets, verbose = 0)    #5
-  all_scores <- c(all_scores, results$mean_absolute_error)
+  results <- model %>% evaluate(val_data, val_targets, verbose = 0)    #5 Evaluates the model on the validation data
+  
+  all_scores <- c(all_scores, results["mae"])
 }
+
+head(results)
 ```
 
 
@@ -328,4 +559,74 @@ all_scores
 ```{r}
 mean(all_scores)
 ```
+
+#### Listing 3.25. Saving the validation logs at each fold
+
+```{r}
+num_epochs <- 500
+all_mae_histories <- NULL
+for (i in 1:k) {
+  cat("processing fold #", i, "\n")
+
+  val_indices <- which(folds == i, arr.ind = TRUE)              #1 Prepares the validation data: data from partition #k
+  val_data <- train_data[val_indices,]
+  val_targets <- train_targets[val_indices]
+
+  partial_train_data <- train_data[-val_indices,]               #2 Prepares the training data: data from all other partitions
+  
+  partial_train_targets <- train_targets[-val_indices]
+
+  model <- build_model()                                        #3 Builds the Keras model (already compiled)
+
+  print(
+    system.time( #329.849  36.252 278.699 
+      history <- model %>% fit(                                    
+        partial_train_data, partial_train_targets,
+        validation_data = list(val_data, val_targets),
+        epochs = num_epochs, batch_size = 1, verbose = 0
+      )
+    )
+  )                                                            #4 Trains the model (in silent mode, verbose=0)
+  
+  mae_history <- history$metrics$val_mae
+  all_mae_histories <- rbind(all_mae_histories, mae_history)
+}
+```
+
+#### Listing 3.26. Building the history of successive mean K-fold validation scores
+
+```{r}
+average_mae_history <- data.frame(
+  epoch = seq(1:ncol(all_mae_histories)),
+  validation_mae = apply(all_mae_histories, 2, mean)
+)
+```
+
+```{r}
+library(ggplot2)
+ggplot(average_mae_history, aes(x = epoch, y = validation_mae)) + geom_line()
+```
+
+#### Listing 3.28. Plotting validation scores with geom_smooth()
+
+```{r}
+ggplot(average_mae_history, aes(x = epoch, y = validation_mae)) + geom_smooth()
+```
+
+#### Listing 3.29. Training the final model
+
+```{r}
+model <- build_model()
+model %>% fit(train_data, train_targets,                  
+          epochs = 80, batch_size = 16, verbose = 0)
+result <- model %>% evaluate(test_data, test_targets)
+```
+
+```{r}
+result
+```
+
+### 3.6.5. Wrapping up
+
+## 3.7. SUMMARY
 
