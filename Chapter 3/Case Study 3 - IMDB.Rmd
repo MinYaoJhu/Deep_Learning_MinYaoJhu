@@ -1,7 +1,9 @@
 ---
 title: "Case Study 3: IMDB -- Binary Classification with Text"
 author: "Rick Scavetta"
-output: html_document
+output: 
+  html_document: 
+    keep_md: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -240,9 +242,9 @@ metrics <- network %>% evaluate(test_data_vec, test_labels)
 
 ```{r}
 metrics
-metrics$acc
+metrics["accuracy"]
 # Error rate: incorrect calling
-1 - metrics$acc
+1 - metrics["accuracy"]
 ```
 
 ## Predictions
