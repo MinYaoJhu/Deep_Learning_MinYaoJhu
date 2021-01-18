@@ -13,15 +13,179 @@ library(tidyverse)
 use_condaenv("r-reticulate")
 ```
 
-```{r}
+### prepare data
 
+```{r}
+cancer <- readr::read_csv("C:/Users/sandy/rclub/Deep_learning_data/TCGA-PANCAN-HiSeq-801x20531/data.csv")
+dim(cancer)
+head(cancer)
 ```
 
 ```{r}
+set.seed(10)
+train <- sample(1:nrow(cancer), size = 600)
+cancer.train <- cancer[train,]
+cancer.test <- cancer[-train,]
+dim(cancer.train)
+dim(cancer.test)
+```
 
+> z scale, Remember to remove the sample ID column
+
+```{r}
+cancer.train <- cancer.train %>% select(-X1)
+head(cancer.train)
+cancer.test <- cancer.test %>% select(-X1)
+head(cancer.test)
+```
+
+> NAs in the loss function arise because of NAs in the input data set or because of low information predictors (genes).
+
+> If you are scaling the genes, then you will get NAs for genes with a standard deviation of 0 (and there are some).
+
+> Additionally, there are genes that do have a positive standard deviation but still have such a small amount of information that they also cause NAs in the loss function.
+
+> So I remove genes that are either 0  SD or have an average expression of < 1.
+
+```{r}
+dim(cancer.train)
+
+novariation_train <- apply(cancer.train, 2, sd)==0
+cancer.train_rm <- cancer.train[,!novariation_train]
+cancer.test_rm <- cancer.test[,!novariation_train]
+dim(cancer.train_rm)
+dim(cancer.test_rm)
+
+lowexpression_train <- apply(cancer.train_rm, 2, mean) < 1
+cancer.train_rm <- cancer.train_rm[, !lowexpression_train]
+cancer.test_rm <- cancer.test_rm[, !lowexpression_train]
+dim(cancer.train_rm)
+dim(cancer.test_rm)
 ```
 
 ```{r}
+cancer.mean <- apply(cancer.train_rm, 2, mean)
+cancer.std <- apply(cancer.train_rm, 2, sd)
 
+cancer.train_rm <- scale(cancer.train_rm, center = cancer.mean, scale = cancer.std)
+cancer.test_rm <- scale(cancer.test_rm, center = cancer.mean, scale = cancer.std)
+
+str(cancer.train_rm)
+str(cancer.test_rm)
 ```
 
+
+### prepare label
+
+```{r}
+cancer_label <- readr::read_csv("C:/Users/sandy/rclub/Deep_learning_data/TCGA-PANCAN-HiSeq-801x20531/labels.csv")
+dim(cancer_label)
+head(cancer_label)
+str(cancer_label)
+table(cancer_label$Class)
+```
+
+```{r}
+cancer_label.train <- cancer_label[train,]
+cancer_label.test <- cancer_label[-train,]
+dim(cancer_label.train)
+dim(cancer_label.test)
+```
+
+> Prepare label. Remember that keras uses zero indexing, so your labels need to be integers from 0 to 4, rather than from 1 to 5.
+
+
+```{r}
+cancer_label.train_vec <- as.integer(as.factor(cancer_label.train$Class)) -1
+str(cancer_label.train_vec)
+cancer_label.test_vec <- as.integer(as.factor(cancer_label.test$Class)) -1
+str(cancer_label.test_vec)
+```
+
+> Setting aside a validation set
+
+```{r}
+set.seed(10)
+val_indices <- sample(1:nrow(cancer.train_rm), size = 100)
+
+cancer.train_rm_val <- cancer.train_rm[val_indices,]
+cancer.train_rm_part <- cancer.train_rm[-val_indices,]
+
+cancer.train_rm_val.label <- cancer_label.train_vec[val_indices]
+cancer.train_rm_part.label <- cancer_label.train_vec[-val_indices]
+
+dim(cancer.train_rm_val)
+dim(cancer.train_rm_part)
+str(cancer.train_rm_val)
+str(cancer.train_rm_part)
+str(cancer.train_rm_val.label)
+str(cancer.train_rm_part.label)
+```
+
+### run the model.
+
+```{r}
+model <- keras_model_sequential() %>% 
+  layer_dense(units = 16, activation = "relu", input_shape = ncol(cancer.train_rm) ) %>% 
+  layer_dense(units = 16, activation = "relu") %>% 
+  layer_dense(units = 5, activation = "softmax")
+
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "sparse_categorical_crossentropy",
+  metrics = c("accuracy")
+)
+
+system.time(history <- model %>% fit(
+  cancer.train_rm_part,
+  cancer.train_rm_part.label,
+  epochs = 20,
+  batch_size = 64,
+  validation_data = list(cancer.train_rm_val, cancer.train_rm_val.label)
+))
+```
+
+### View a summary of the model
+
+```{r}
+summary(model)
+```
+
+```{r}
+str(history)
+```
+
+```{r}
+plot(history)
+```
+```{r}
+model <- keras_model_sequential() %>% 
+  layer_dense(units = 16, activation = "relu", input_shape = ncol(cancer.train_rm) ) %>% 
+  layer_dense(units = 16, activation = "relu") %>% 
+  layer_dense(units = 5, activation = "softmax")
+
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "sparse_categorical_crossentropy",
+  metrics = c("accuracy")
+)
+
+system.time(history <- model %>% fit(
+  cancer.train_rm,
+  cancer_label.train_vec,
+  epochs = 8,
+  batch_size = 64
+))
+```
+
+```{r}
+plot(history)
+```
+
+```{r}
+results <- model %>% evaluate(cancer.test_rm, cancer_label.test_vec)
+
+results
+```

@@ -1,6 +1,8 @@
 ---
 title: "Case Study 4: Boston -- Scalar Regression to predict Boston House Prices"
-output: html_document
+output: 
+  html_document: 
+    keep_md: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -9,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # Initialize package
 # install.packages(keras)
 library(keras)
+library(tidyverse)
 library(ggplot2)
 ```
 
@@ -144,7 +147,7 @@ for (i in 1:k) {
                 
   # Evaluate the model on the validation data
   results <- network %>% evaluate(val_data, val_targets, verbose = 0)
-  all_scores <- c(all_scores, results$mean_absolute_error)
+  all_scores <- c(all_scores, results["mae"])
 }  
 ```
 
@@ -193,7 +196,7 @@ for (i in 1:k) {
                            batch_size = 1, 
                            verbose = 0
   )
-  mae_history <- history$metrics$val_mean_absolute_error
+  mae_history <- history$metrics$val_mae
   all_mae_histories <- rbind(all_mae_histories, mae_history)
 }
 ```
@@ -277,7 +280,7 @@ for (i in 1:k) {
                            batch_size = 1, 
                            verbose = 0
   )
-  mae_history <- history$metrics$val_mean_absolute_error
+  mae_history <- history$metrics$val_mae
   all_mae_histories <- rbind(all_mae_histories, mae_history)
 }
 ```
@@ -364,7 +367,7 @@ for (i in 1:k) {
                            batch_size = 1, 
                            verbose = 0
   )
-  mae_history <- history$metrics$val_mean_absolute_error
+  mae_history <- history$metrics$val_mae
   all_mae_histories <- rbind(all_mae_histories, mae_history)
 }
 ```

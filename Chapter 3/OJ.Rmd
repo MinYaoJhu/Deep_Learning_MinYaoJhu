@@ -104,7 +104,7 @@ str(OJ.test)
 
 ```{r}
 oj.mean <- apply(OJ.train, 2, mean)
-oj.std <- apply(OJ.test, 2, sd)
+oj.std <- apply(OJ.train, 2, sd)
 
 OJ.train <- scale(OJ.train, center=oj.mean, scale=oj.std)
 OJ.test <- scale(OJ.test, center=oj.mean, scale=oj.std)
@@ -129,6 +129,13 @@ partial_OJ.train <- OJ.train[-val_indices,]
 
 OJ.train_val.label <- OJ.train.label[val_indices]
 partial_OJ.train.label <- OJ.train.label[-val_indices]
+
+dim(OJ.train_val)
+dim(partial_OJ.train)
+str(OJ.train_val)
+str(partial_OJ.train)
+str(OJ.train_val.label)
+str(partial_OJ.train.label)
 
 ```
 
