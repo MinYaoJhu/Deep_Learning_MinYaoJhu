@@ -1,0 +1,27 @@
+---
+title: "cancer"
+author: "Min-Yao"
+date: "1/17/2021"
+output: html_document
+---
+
+```{r}
+library(keras)
+library(reticulate)
+library(tensorflow)
+library(tidyverse)
+use_condaenv("r-reticulate")
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
