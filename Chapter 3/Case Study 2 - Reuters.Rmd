@@ -356,3 +356,99 @@ data.frame(target = actual,
 sessionInfo()
 ```
 
+### variant 1: larger or smaller layers
+
+```{r}
+define_model <- function(powerto = 6) {
+  network_int <- keras_model_sequential() %>% 
+    layer_dense(units = 2^powerto, activation = "relu", input_shape = c(10000)) %>% 
+    layer_dense(units = 2^powerto, activation = "relu") %>% 
+    layer_dense(units = 46, activation = "softmax")
+  
+  network_int %>% compile(
+    optimizer = "rmsprop",
+    loss = "categorical_crossentropy",
+    metrics = c("accuracy")
+  )
+}
+```
+
+```{r}
+run_model <- function(network, epochs = 20) {
+  network %>% fit(
+    train_data_vec,
+    train_labels_vec,
+    epochs = epochs,
+    batch_size = 512,
+    validation_data = list(val_data_vec, val_labels_vec)
+  )
+}
+```
+
+```{r}
+define_model() %>%
+  run_model() -> history_original
+
+history_original %>%
+  plot()
+
+```
+
+```{r}
+history_original %>% 
+  data.frame() %>% 
+  mutate(nlayers = "2",
+         powerto = "64") -> history_original
+```
+
+```{r}
+powerto_input <- c(2:5,7:10)
+
+powerto_input %>% 
+  map(define_model) %>% 
+  map(run_model) %>% 
+  map_df(data.frame, .id = "powerto") %>% 
+  mutate(powerto = as.character(factor(powerto, labels = 2^powerto_input)),
+         nlayers = "2") -> history_powerto
+```
+
+```{r}
+define_model <- function(nlayers = 2, powerto = 6) {
+  
+  # input layer
+  network <- keras_model_sequential() %>% 
+    layer_dense(units = 2^powerto, activation = "relu", input_shape = c(10000) ) 
+  
+  # additional layers
+  if (nlayers>1) {
+  map(2:nlayers, ~ network %>% 
+        layer_dense(units = 2^powerto, activation = "relu")
+  )
+  }
+  
+  # output layer
+  network %>% 
+    layer_dense(units = 46, activation = "softmax")
+  
+  # compile it
+  network %>% compile(
+    optimizer = "rmsprop",
+    loss = "categorical_crossentropy",
+    metrics = c("accuracy")
+  )
+  
+}
+```
+
+
+```{r}
+nlayers_input <- c(1,3:8)
+
+nlayers_input %>% 
+  map(define_model) %>% 
+  map(run_model) %>% 
+  map_df(data.frame, .id = "nlayers") %>% 
+  mutate(nlayers = as.character(factor(nlayers, labels = nlayers_input)),
+         powerto = "64") -> history_nlayers
+```
+

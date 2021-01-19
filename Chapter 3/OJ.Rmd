@@ -206,4 +206,132 @@ results <- model %>% evaluate(OJ.test, OJ.test.label)
 results
 ```
 
-> Accuracy is 83.33%, which is a little bit better than the trees (82.59%).
+> Accuracy is 84.81%, which is a little bit better than the trees (82.59%).
+
+### variant 1: larger or smaller layers
+
+```{r}
+define_model <- function(powerto) {
+  network_int <- keras_model_sequential() %>% 
+    layer_dense(units = 2^powerto, activation = "relu", input_shape = ncol(OJ.train)) %>% 
+    layer_dense(units = 2^powerto, activation = "relu") %>% 
+    layer_dense(units = 1, activation = "sigmoid")
+  
+  network_int %>% compile(
+    optimizer = "rmsprop",
+    loss = "binary_crossentropy",
+    metrics = c("accuracy")
+  )
+}
+```
+
+```{r}
+run_model <- function(network, epochs) {
+  network %>% fit(
+    partial_OJ.train,
+    partial_OJ.train.label,
+    epochs = epochs,
+    batch_size = 256,
+    validation_data = list(OJ.train_val, OJ.train_val.label)
+  )
+}
+```
+
+> units = 8
+
+```{r}
+define_model(3) %>%
+  run_model(100) -> history_3
+
+history_3 %>%
+  plot()
+```
+
+> units = 16
+
+```{r}
+define_model(4) %>%
+  run_model(100) -> history_4
+
+history_4 %>%
+  plot()
+```
+
+> units = 32
+
+```{r}
+define_model(5) %>%
+  run_model(100) -> history_5
+
+history_5 %>%
+  plot()
+```
+> units = 64
+
+```{r}
+define_model(6) %>%
+  run_model(100) -> history_6
+
+history_6 %>%
+  plot()
+```
+
+### variant 2: how many layers
+
+```{r}
+define_model <- function(nlayers, powerto) {
+  
+  # input layer
+  network <- keras_model_sequential() %>% 
+    layer_dense(units = 2^powerto, activation = "relu", input_shape = ncol(OJ.train)) 
+  
+  # additional layers
+  if (nlayers>1) {
+  map(2:nlayers, ~ network %>% 
+        layer_dense(units = 2^powerto, activation = "relu")
+  )
+  }
+  
+  # output layer
+  network %>% 
+    layer_dense(units = 1, activation = "sigmoid")
+  
+  # compile it
+  network %>% compile(
+    optimizer = "rmsprop",
+    loss = "binary_crossentropy",
+    metrics = c("accuracy")
+  )
+  
+}
+```
+
+> 1 layer, units = 16
+
+```{r}
+define_model(1,4) %>%
+  run_model(100) -> history_1_4
+
+history_1_4 %>%
+  plot()
+```
+
+> 2 layer, units = 16
+
+```{r}
+define_model(2,4) %>%
+  run_model(100) -> history_2_4
+
+history_2_4 %>%
+  plot()
+```
+
+> 3 layer, units = 16
+
+```{r}
+define_model(3,4) %>%
+  run_model(100) -> history_3_4
+
+history_3_4 %>%
+  plot()
+```

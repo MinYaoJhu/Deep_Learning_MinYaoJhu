@@ -396,7 +396,7 @@ str(OJ.test)
 
 ```r
 oj.mean <- apply(OJ.train, 2, mean)
-oj.std <- apply(OJ.test, 2, sd)
+oj.std <- apply(OJ.train, 2, sd)
 
 OJ.train <- scale(OJ.train, center=oj.mean, scale=oj.std)
 OJ.test <- scale(OJ.test, center=oj.mean, scale=oj.std)
@@ -405,13 +405,13 @@ str(OJ.train)
 ```
 
 ```
-##  num [1:800, 1:20] -0.8395 0.2375 -0.7128 0.3642 0.0474 ...
+##  num [1:800, 1:20] -0.8555 0.242 -0.7264 0.3712 0.0483 ...
 ##  - attr(*, "dimnames")=List of 2
 ##   ..$ : chr [1:800] "491" "368" "439" "344" ...
 ##   ..$ : chr [1:20] "WeekofPurchase" "PriceCH" "PriceMM" "DiscCH" ...
 ##  - attr(*, "scaled:center")= Named num [1:20] 254.2512 1.8675 2.0851 0.0534 0.1243 ...
 ##   ..- attr(*, "names")= chr [1:20] "WeekofPurchase" "PriceCH" "PriceMM" "DiscCH" ...
-##  - attr(*, "scaled:scale")= Named num [1:20] 15.785 0.101 0.137 0.11 0.215 ...
+##  - attr(*, "scaled:scale")= Named num [1:20] 15.489 0.102 0.134 0.12 0.214 ...
 ##   ..- attr(*, "names")= chr [1:20] "WeekofPurchase" "PriceCH" "PriceMM" "DiscCH" ...
 ```
 
@@ -420,13 +420,13 @@ str(OJ.test)
 ```
 
 ```
-##  num [1:270, 1:20] -0.966 -0.586 0.871 0.174 0.618 ...
+##  num [1:270, 1:20] -0.985 -0.597 0.888 0.177 0.629 ...
 ##  - attr(*, "dimnames")=List of 2
 ##   ..$ : chr [1:270] "2" "3" "14" "21" ...
 ##   ..$ : chr [1:20] "WeekofPurchase" "PriceCH" "PriceMM" "DiscCH" ...
 ##  - attr(*, "scaled:center")= Named num [1:20] 254.2512 1.8675 2.0851 0.0534 0.1243 ...
 ##   ..- attr(*, "names")= chr [1:20] "WeekofPurchase" "PriceCH" "PriceMM" "DiscCH" ...
-##  - attr(*, "scaled:scale")= Named num [1:20] 15.785 0.101 0.137 0.11 0.215 ...
+##  - attr(*, "scaled:scale")= Named num [1:20] 15.489 0.102 0.134 0.12 0.214 ...
 ##   ..- attr(*, "names")= chr [1:20] "WeekofPurchase" "PriceCH" "PriceMM" "DiscCH" ...
 ```
 
@@ -447,6 +447,58 @@ partial_OJ.train <- OJ.train[-val_indices,]
 
 OJ.train_val.label <- OJ.train.label[val_indices]
 partial_OJ.train.label <- OJ.train.label[-val_indices]
+
+dim(OJ.train_val)
+```
+
+```
+## [1] 100  20
+```
+
+```r
+dim(partial_OJ.train)
+```
+
+```
+## [1] 700  20
+```
+
+```r
+str(OJ.train_val)
+```
+
+```
+##  num [1:100, 1:20] -1.1138 0.8231 -0.0162 -0.2745 -0.0162 ...
+##  - attr(*, "dimnames")=List of 2
+##   ..$ : chr [1:100] "643" "777" "684" "736" ...
+##   ..$ : chr [1:20] "WeekofPurchase" "PriceCH" "PriceMM" "DiscCH" ...
+```
+
+```r
+str(partial_OJ.train)
+```
+
+```
+##  num [1:700, 1:20] -0.8555 0.242 -0.7264 0.0483 -1.372 ...
+##  - attr(*, "dimnames")=List of 2
+##   ..$ : chr [1:700] "491" "368" "439" "143" ...
+##   ..$ : chr [1:20] "WeekofPurchase" "PriceCH" "PriceMM" "DiscCH" ...
+```
+
+```r
+str(OJ.train_val.label)
+```
+
+```
+##  num [1:100] 0 1 1 0 0 0 0 0 1 0 ...
+```
+
+```r
+str(partial_OJ.train.label)
+```
+
+```
+##  num [1:700] 0 1 1 1 1 1 1 1 1 0 ...
 ```
 
 ### set up and run the model!
@@ -476,7 +528,7 @@ system.time(history <- model %>% fit(
 
 ```
 ##    user  system elapsed 
-##    4.96    0.10    4.39
+##    4.32    0.19    3.73
 ```
 
 
@@ -491,10 +543,10 @@ str(history)
 ##   ..$ epochs : int 100
 ##   ..$ steps  : int 3
 ##  $ metrics:List of 4
-##   ..$ loss        : num [1:100] 0.745 0.721 0.707 0.697 0.687 ...
-##   ..$ accuracy    : num [1:100] 0.374 0.433 0.483 0.519 0.539 ...
-##   ..$ val_loss    : num [1:100] 0.738 0.726 0.716 0.709 0.702 ...
-##   ..$ val_accuracy: num [1:100] 0.35 0.37 0.41 0.4 0.44 ...
+##   ..$ loss        : num [1:100] 0.663 0.638 0.623 0.611 0.601 ...
+##   ..$ accuracy    : num [1:100] 0.611 0.619 0.639 0.653 0.663 ...
+##   ..$ val_loss    : num [1:100] 0.674 0.661 0.651 0.643 0.635 ...
+##   ..$ val_accuracy: num [1:100] 0.59 0.59 0.59 0.59 0.59 ...
 ##  - attr(*, "class")= chr "keras_training_history"
 ```
 
@@ -535,7 +587,7 @@ system.time(history <- model %>% fit(
 
 ```
 ##    user  system elapsed 
-##    1.17    0.05    0.94
+##    1.14    0.03    0.81
 ```
 
 
@@ -560,7 +612,187 @@ results
 
 ```
 ##      loss  accuracy 
-## 0.3593392 0.8481482
+## 0.3596928 0.8518519
 ```
 
-> Accuracy is 83.33%, which is a little bit better than the trees (82.59%).
+> Accuracy is 84.81%, which is a little bit better than the trees (82.59%).
+
+### variant 1: larger or smaller layers
+
+
+```r
+define_model <- function(powerto) {
+  network_int <- keras_model_sequential() %>% 
+    layer_dense(units = 2^powerto, activation = "relu", input_shape = ncol(OJ.train)) %>% 
+    layer_dense(units = 2^powerto, activation = "relu") %>% 
+    layer_dense(units = 1, activation = "sigmoid")
+  
+  network_int %>% compile(
+    optimizer = "rmsprop",
+    loss = "binary_crossentropy",
+    metrics = c("accuracy")
+  )
+}
+```
+
+
+```r
+run_model <- function(network, epochs) {
+  network %>% fit(
+    partial_OJ.train,
+    partial_OJ.train.label,
+    epochs = epochs,
+    batch_size = 256,
+    validation_data = list(OJ.train_val, OJ.train_val.label)
+  )
+}
+```
+
+> units = 8
+
+
+```r
+define_model(3) %>%
+  run_model(100) -> history_3
+
+history_3 %>%
+  plot()
+```
+
+```
+## `geom_smooth()` using formula 'y ~ x'
+```
+
+![](OJ_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
+
+> units = 16
+
+
+```r
+define_model(4) %>%
+  run_model(100) -> history_4
+
+history_4 %>%
+  plot()
+```
+
+```
+## `geom_smooth()` using formula 'y ~ x'
+```
+
+![](OJ_files/figure-html/unnamed-chunk-23-1.png)<!-- -->
+
+> units = 32
+
+
+```r
+define_model(5) %>%
+  run_model(100) -> history_5
+
+history_5 %>%
+  plot()
+```
+
+```
+## `geom_smooth()` using formula 'y ~ x'
+```
+
+![](OJ_files/figure-html/unnamed-chunk-24-1.png)<!-- -->
+> units = 64
+
+
+```r
+define_model(6) %>%
+  run_model(100) -> history_6
+
+history_6 %>%
+  plot()
+```
+
+```
+## `geom_smooth()` using formula 'y ~ x'
+```
+
+![](OJ_files/figure-html/unnamed-chunk-25-1.png)<!-- -->
+
+### variant 2: how many layers
+
+
+```r
+define_model <- function(nlayers, powerto) {
+  
+  # input layer
+  network <- keras_model_sequential() %>% 
+    layer_dense(units = 2^powerto, activation = "relu", input_shape = ncol(OJ.train)) 
+  
+  # additional layers
+  if (nlayers>1) {
+  map(2:nlayers, ~ network %>% 
+        layer_dense(units = 2^powerto, activation = "relu")
+  )
+  }
+  
+  # output layer
+  network %>% 
+    layer_dense(units = 1, activation = "sigmoid")
+  
+  # compile it
+  network %>% compile(
+    optimizer = "rmsprop",
+    loss = "binary_crossentropy",
+    metrics = c("accuracy")
+  )
+  
+}
+```
+
+> 1 layer, units = 16
+
+
+```r
+define_model(1,4) %>%
+  run_model(100) -> history_1_4
+
+history_1_4 %>%
+  plot()
+```
+
+```
+## `geom_smooth()` using formula 'y ~ x'
+```
+
+![](OJ_files/figure-html/unnamed-chunk-27-1.png)<!-- -->
+
+> 2 layer, units = 16
+
+
+```r
+define_model(2,4) %>%
+  run_model(100) -> history_2_4
+
+history_2_4 %>%
+  plot()
+```
+
+```
+## `geom_smooth()` using formula 'y ~ x'
+```
+
+![](OJ_files/figure-html/unnamed-chunk-28-1.png)<!-- -->
+
+> 3 layer, units = 16
+
+
+```r
+define_model(3,4) %>%
+  run_model(100) -> history_3_4
+
+history_3_4 %>%
+  plot()
+```
+
+```
+## `geom_smooth()` using formula 'y ~ x'
+```
+
+![](OJ_files/figure-html/unnamed-chunk-29-1.png)<!-- -->
