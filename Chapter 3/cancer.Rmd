@@ -124,7 +124,106 @@ str(cancer.train_rm_val.label)
 str(cancer.train_rm_part.label)
 ```
 
-### run the model.
+## try different hyperparamaters
+
+```{r}
+define_model <- function(nlayers, powerto) {
+  
+  # input layer
+  network <- keras_model_sequential() %>% 
+    layer_dense(units = 2^powerto, activation = "relu", input_shape = ncol(cancer.train_rm) ) 
+  
+  # additional layers
+  if (nlayers>1) {
+  map(2:nlayers, ~ network %>% 
+        layer_dense(units = 2^powerto, activation = "relu")
+  )
+  }
+  
+  # output layer
+  network %>% 
+    layer_dense(units = 5, activation = "softmax")
+  
+  # compile it
+  network %>% compile(
+    optimizer = "rmsprop",
+    loss = "sparse_categorical_crossentropy",
+    metrics = c("accuracy")
+  )
+  
+}
+```
+
+```{r}
+run_model <- function(network, epochs = 20) {
+  network %>% fit(
+    cancer.train_rm_part,
+    cancer.train_rm_part.label,
+    epochs = epochs,
+    batch_size = 64,
+    validation_data = list(cancer.train_rm_val, cancer.train_rm_val.label)
+  )
+}
+```
+
+> 1 layer, units = 16
+
+```{r}
+define_model(1,4) %>%
+  run_model(20) -> history_1_4
+
+history_1_4 %>%
+  plot()
+
+```
+
+> 2 layer, units = 16
+
+```{r}
+define_model(2,4) %>%
+  run_model(20) -> history_2_4
+
+history_2_4 %>%
+  plot()
+
+```
+
+> 3 layer, units = 16
+
+```{r}
+define_model(3,4) %>%
+  run_model(20) -> history_3_4
+
+history_3_4 %>%
+  plot()
+
+```
+
+> 2 layer, units = 32
+
+```{r}
+define_model(2,5) %>%
+  run_model(20) -> history_2_5
+
+history_2_5 %>%
+  plot()
+
+```
+
+> 2 layer, units = 8
+
+```{r}
+define_model(2,3) %>%
+  run_model(20) -> history_2_3
+
+history_2_3 %>%
+  plot()
+
+```
+
+## run the model
+
+### I decided to choose units = 16 & 2 layers to run the model.
 
 ```{r}
 model <- keras_model_sequential() %>% 

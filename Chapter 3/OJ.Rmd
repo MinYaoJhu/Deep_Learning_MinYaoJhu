@@ -82,7 +82,7 @@ library(tensorflow)
 use_condaenv("r-reticulate")
 ```
 
-> create label
+> prepare label
 
 ```{r}
 OJ.train.label <- OJ.train %>% select(Purchase) %>% mutate(Purchase=ifelse(Purchase=="CH", 0, 1)) %>% pull(Purchase)
@@ -91,7 +91,7 @@ OJ.test.label <- OJ.test %>% select(Purchase) %>% mutate(Purchase=ifelse(Purchas
 str(OJ.test.label)
 ```
 
-> create data
+> prepare data
 
 ```{r}
 OJ.train <- OJ.train %>% select(-Purchase)
@@ -100,7 +100,7 @@ OJ.test <- OJ.test %>% select(-Purchase)
 str(OJ.test)
 ```
 
-> scale it
+> scale data
 
 ```{r}
 oj.mean <- apply(OJ.train, 2, mean)
@@ -113,7 +113,7 @@ str(OJ.train)
 str(OJ.test)
 ```
 
-#### Listing 3.15. Setting aside a validation set
+> Setting aside a validation set
 
 ```{r}
 set.seed(10)
@@ -139,74 +139,7 @@ str(partial_OJ.train.label)
 
 ```
 
-### set up and run the model!
-
-```{r}
-model <- keras_model_sequential() %>% 
-  layer_dense(units = 16, activation = "relu", input_shape = ncol(OJ.train) ) %>% 
-  layer_dense(units = 16, activation = "relu") %>% 
-  layer_dense(units = 1, activation = "sigmoid")
-
-
-model %>% compile(
-  optimizer = "rmsprop",
-  loss = "binary_crossentropy",
-  metrics = c("accuracy")
-)
-
-system.time(history <- model %>% fit(
-  partial_OJ.train,
-  partial_OJ.train.label,
-  epochs = 100,
-  batch_size = 256,
-  validation_data = list(OJ.train_val, OJ.train_val.label)
-))
-```
-
-```{r}
-str(history)
-```
-
-```{r}
-plot(history)
-```
-
-> I choose 56, run with 56 epochs and full training:
-
-```{r}
-model <- keras_model_sequential() %>% 
-  layer_dense(units = 16, activation = "relu", input_shape = ncol(OJ.train) ) %>% 
-  layer_dense(units = 16, activation = "relu") %>% 
-  layer_dense(units = 1, activation = "sigmoid")
-
-
-model %>% compile(
-  optimizer = "rmsprop",
-  loss = "binary_crossentropy",
-  metrics = c("accuracy")
-)
-
-system.time(history <- model %>% fit(
-  OJ.train,
-  OJ.train.label,
-  epochs = 56,
-  batch_size = 256
-))
-```
-
-
-```{r}
-plot(history)
-```
-
-
-```{r}
-results <- model %>% evaluate(OJ.test, OJ.test.label)
-
-results
-```
-
-> Accuracy is 84.81%, which is a little bit better than the trees (82.59%).
+## Try different hyperparamaters
 
 ### variant 1: larger or smaller layers
 
@@ -335,3 +268,72 @@ define_model(3,4) %>%
 history_3_4 %>%
   plot()
 ```
+
+### I decide to use units = 16 and 2 layers to run the model.
+
+```{r}
+model <- keras_model_sequential() %>% 
+  layer_dense(units = 16, activation = "relu", input_shape = ncol(OJ.train) ) %>% 
+  layer_dense(units = 16, activation = "relu") %>% 
+  layer_dense(units = 1, activation = "sigmoid")
+
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+system.time(history <- model %>% fit(
+  partial_OJ.train,
+  partial_OJ.train.label,
+  epochs = 100,
+  batch_size = 256,
+  validation_data = list(OJ.train_val, OJ.train_val.label)
+))
+```
+
+```{r}
+str(history)
+```
+
+```{r}
+plot(history)
+```
+
+> I choose 56, run with 56 epochs and full training:
+
+```{r}
+model <- keras_model_sequential() %>% 
+  layer_dense(units = 16, activation = "relu", input_shape = ncol(OJ.train) ) %>% 
+  layer_dense(units = 16, activation = "relu") %>% 
+  layer_dense(units = 1, activation = "sigmoid")
+
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+system.time(history <- model %>% fit(
+  OJ.train,
+  OJ.train.label,
+  epochs = 56,
+  batch_size = 256
+))
+```
+
+
+```{r}
+plot(history)
+```
+
+
+```{r}
+results <- model %>% evaluate(OJ.test, OJ.test.label)
+
+results
+```
+
+> Accuracy is 84.81%, which is a little bit better than the trees (82.59%).

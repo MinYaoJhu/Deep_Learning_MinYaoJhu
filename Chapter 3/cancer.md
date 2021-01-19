@@ -471,7 +471,138 @@ str(cancer.train_rm_part.label)
 ##  num [1:500] 1 3 0 0 2 2 0 0 1 0 ...
 ```
 
-### run the model.
+## try different hyperparamaters
+
+
+```r
+define_model <- function(nlayers, powerto) {
+  
+  # input layer
+  network <- keras_model_sequential() %>% 
+    layer_dense(units = 2^powerto, activation = "relu", input_shape = ncol(cancer.train_rm) ) 
+  
+  # additional layers
+  if (nlayers>1) {
+  map(2:nlayers, ~ network %>% 
+        layer_dense(units = 2^powerto, activation = "relu")
+  )
+  }
+  
+  # output layer
+  network %>% 
+    layer_dense(units = 5, activation = "softmax")
+  
+  # compile it
+  network %>% compile(
+    optimizer = "rmsprop",
+    loss = "sparse_categorical_crossentropy",
+    metrics = c("accuracy")
+  )
+  
+}
+```
+
+
+```r
+run_model <- function(network, epochs = 20) {
+  network %>% fit(
+    cancer.train_rm_part,
+    cancer.train_rm_part.label,
+    epochs = epochs,
+    batch_size = 64,
+    validation_data = list(cancer.train_rm_val, cancer.train_rm_val.label)
+  )
+}
+```
+
+> 1 layer, units = 16
+
+
+```r
+define_model(1,4) %>%
+  run_model(20) -> history_1_4
+
+history_1_4 %>%
+  plot()
+```
+
+```
+## `geom_smooth()` using formula 'y ~ x'
+```
+
+![](cancer_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
+
+> 2 layer, units = 16
+
+
+```r
+define_model(2,4) %>%
+  run_model(20) -> history_2_4
+
+history_2_4 %>%
+  plot()
+```
+
+```
+## `geom_smooth()` using formula 'y ~ x'
+```
+
+![](cancer_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+
+> 3 layer, units = 16
+
+
+```r
+define_model(3,4) %>%
+  run_model(20) -> history_3_4
+
+history_3_4 %>%
+  plot()
+```
+
+```
+## `geom_smooth()` using formula 'y ~ x'
+```
+
+![](cancer_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
+
+> 2 layer, units = 32
+
+
+```r
+define_model(2,5) %>%
+  run_model(20) -> history_2_5
+
+history_2_5 %>%
+  plot()
+```
+
+```
+## `geom_smooth()` using formula 'y ~ x'
+```
+
+![](cancer_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
+
+> 2 layer, units = 8
+
+
+```r
+define_model(2,3) %>%
+  run_model(20) -> history_2_3
+
+history_2_3 %>%
+  plot()
+```
+
+```
+## `geom_smooth()` using formula 'y ~ x'
+```
+
+![](cancer_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
+
+## run the model
+
+### I decided to choose units = 16 & 2 layers to run the model.
 
 
 ```r
@@ -498,7 +629,7 @@ system.time(history <- model %>% fit(
 
 ```
 ##    user  system elapsed 
-##    3.94    1.61    2.08
+##    4.22    2.23    2.38
 ```
 
 ### View a summary of the model
@@ -509,15 +640,15 @@ summary(model)
 ```
 
 ```
-## Model: "sequential"
+## Model: "sequential_5"
 ## ________________________________________________________________________________
 ## Layer (type)                        Output Shape                    Param #     
 ## ================================================================================
-## dense_2 (Dense)                     (None, 16)                      278544      
+## dense_17 (Dense)                    (None, 16)                      278544      
 ## ________________________________________________________________________________
-## dense_1 (Dense)                     (None, 16)                      272         
+## dense_16 (Dense)                    (None, 16)                      272         
 ## ________________________________________________________________________________
-## dense (Dense)                       (None, 5)                       85          
+## dense_15 (Dense)                    (None, 5)                       85          
 ## ================================================================================
 ## Total params: 278,901
 ## Trainable params: 278,901
@@ -537,10 +668,10 @@ str(history)
 ##   ..$ epochs : int 20
 ##   ..$ steps  : int 8
 ##  $ metrics:List of 4
-##   ..$ loss        : num [1:20] 1.0878 0.2393 0.0691 0.0476 0.0202 ...
-##   ..$ accuracy    : num [1:20] 0.696 0.898 0.98 0.988 0.994 ...
-##   ..$ val_loss    : num [1:20] 0.3178 0.0858 0.0479 0.0156 0.018 ...
-##   ..$ val_accuracy: num [1:20] 0.9 0.97 0.99 0.99 0.99 ...
+##   ..$ loss        : num [1:20] 1.1607 0.3136 0.124 0.0392 0.0132 ...
+##   ..$ accuracy    : num [1:20] 0.696 0.902 0.954 0.994 1 ...
+##   ..$ val_loss    : num [1:20] 0.3186 0.197 0.09 0.0448 0.017 ...
+##   ..$ val_accuracy: num [1:20] 0.86 0.84 0.98 0.99 1 ...
 ##  - attr(*, "class")= chr "keras_training_history"
 ```
 
@@ -553,7 +684,7 @@ plot(history)
 ## `geom_smooth()` using formula 'y ~ x'
 ```
 
-![](cancer_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+![](cancer_files/figure-html/unnamed-chunk-21-1.png)<!-- -->
 
 ```r
 model <- keras_model_sequential() %>% 
@@ -578,7 +709,7 @@ system.time(history <- model %>% fit(
 
 ```
 ##    user  system elapsed 
-##    1.53    0.83    0.82
+##    2.06    0.69    0.96
 ```
 
 
@@ -586,7 +717,7 @@ system.time(history <- model %>% fit(
 plot(history)
 ```
 
-![](cancer_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
+![](cancer_files/figure-html/unnamed-chunk-23-1.png)<!-- -->
 
 
 ```r
@@ -597,5 +728,5 @@ results
 
 ```
 ##      loss  accuracy 
-## 0.0183712 0.9950249
+## 0.1220048 0.9950249
 ```
