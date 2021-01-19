@@ -309,7 +309,7 @@ library(tensorflow)
 use_condaenv("r-reticulate")
 ```
 
-> create label
+> prepare label
 
 
 ```r
@@ -330,7 +330,7 @@ str(OJ.test.label)
 ##  num [1:270] 0 0 0 0 0 0 0 0 0 0 ...
 ```
 
-> create data
+> prepare data
 
 
 ```r
@@ -391,7 +391,7 @@ str(OJ.test)
 ##  $ Store4        : num  0 0 0 0 0 0 0 0 0 1 ...
 ```
 
-> scale it
+> scale data
 
 
 ```r
@@ -430,7 +430,7 @@ str(OJ.test)
 ##   ..- attr(*, "names")= chr [1:20] "WeekofPurchase" "PriceCH" "PriceMM" "DiscCH" ...
 ```
 
-#### Listing 3.15. Setting aside a validation set
+> Setting aside a validation set
 
 
 ```r
@@ -501,121 +501,7 @@ str(partial_OJ.train.label)
 ##  num [1:700] 0 1 1 1 1 1 1 1 1 0 ...
 ```
 
-### set up and run the model!
-
-
-```r
-model <- keras_model_sequential() %>% 
-  layer_dense(units = 16, activation = "relu", input_shape = ncol(OJ.train) ) %>% 
-  layer_dense(units = 16, activation = "relu") %>% 
-  layer_dense(units = 1, activation = "sigmoid")
-
-
-model %>% compile(
-  optimizer = "rmsprop",
-  loss = "binary_crossentropy",
-  metrics = c("accuracy")
-)
-
-system.time(history <- model %>% fit(
-  partial_OJ.train,
-  partial_OJ.train.label,
-  epochs = 100,
-  batch_size = 256,
-  validation_data = list(OJ.train_val, OJ.train_val.label)
-))
-```
-
-```
-##    user  system elapsed 
-##    4.32    0.19    3.73
-```
-
-
-```r
-str(history)
-```
-
-```
-## List of 2
-##  $ params :List of 3
-##   ..$ verbose: int 1
-##   ..$ epochs : int 100
-##   ..$ steps  : int 3
-##  $ metrics:List of 4
-##   ..$ loss        : num [1:100] 0.663 0.638 0.623 0.611 0.601 ...
-##   ..$ accuracy    : num [1:100] 0.611 0.619 0.639 0.653 0.663 ...
-##   ..$ val_loss    : num [1:100] 0.674 0.661 0.651 0.643 0.635 ...
-##   ..$ val_accuracy: num [1:100] 0.59 0.59 0.59 0.59 0.59 ...
-##  - attr(*, "class")= chr "keras_training_history"
-```
-
-
-```r
-plot(history)
-```
-
-```
-## `geom_smooth()` using formula 'y ~ x'
-```
-
-![](OJ_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
-
-> I choose 56, run with 56 epochs and full training:
-
-
-```r
-model <- keras_model_sequential() %>% 
-  layer_dense(units = 16, activation = "relu", input_shape = ncol(OJ.train) ) %>% 
-  layer_dense(units = 16, activation = "relu") %>% 
-  layer_dense(units = 1, activation = "sigmoid")
-
-
-model %>% compile(
-  optimizer = "rmsprop",
-  loss = "binary_crossentropy",
-  metrics = c("accuracy")
-)
-
-system.time(history <- model %>% fit(
-  OJ.train,
-  OJ.train.label,
-  epochs = 56,
-  batch_size = 256
-))
-```
-
-```
-##    user  system elapsed 
-##    1.14    0.03    0.81
-```
-
-
-
-```r
-plot(history)
-```
-
-```
-## `geom_smooth()` using formula 'y ~ x'
-```
-
-![](OJ_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
-
-
-
-```r
-results <- model %>% evaluate(OJ.test, OJ.test.label)
-
-results
-```
-
-```
-##      loss  accuracy 
-## 0.3596928 0.8518519
-```
-
-> Accuracy is 84.81%, which is a little bit better than the trees (82.59%).
+## Try different hyperparamaters
 
 ### variant 1: larger or smaller layers
 
@@ -663,7 +549,7 @@ history_3 %>%
 ## `geom_smooth()` using formula 'y ~ x'
 ```
 
-![](OJ_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
+![](OJ_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
 
 > units = 16
 
@@ -680,7 +566,7 @@ history_4 %>%
 ## `geom_smooth()` using formula 'y ~ x'
 ```
 
-![](OJ_files/figure-html/unnamed-chunk-23-1.png)<!-- -->
+![](OJ_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
 
 > units = 32
 
@@ -697,7 +583,7 @@ history_5 %>%
 ## `geom_smooth()` using formula 'y ~ x'
 ```
 
-![](OJ_files/figure-html/unnamed-chunk-24-1.png)<!-- -->
+![](OJ_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
 > units = 64
 
 
@@ -713,7 +599,7 @@ history_6 %>%
 ## `geom_smooth()` using formula 'y ~ x'
 ```
 
-![](OJ_files/figure-html/unnamed-chunk-25-1.png)<!-- -->
+![](OJ_files/figure-html/unnamed-chunk-19-1.png)<!-- -->
 
 ### variant 2: how many layers
 
@@ -761,7 +647,7 @@ history_1_4 %>%
 ## `geom_smooth()` using formula 'y ~ x'
 ```
 
-![](OJ_files/figure-html/unnamed-chunk-27-1.png)<!-- -->
+![](OJ_files/figure-html/unnamed-chunk-21-1.png)<!-- -->
 
 > 2 layer, units = 16
 
@@ -778,7 +664,7 @@ history_2_4 %>%
 ## `geom_smooth()` using formula 'y ~ x'
 ```
 
-![](OJ_files/figure-html/unnamed-chunk-28-1.png)<!-- -->
+![](OJ_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
 
 > 3 layer, units = 16
 
@@ -795,4 +681,120 @@ history_3_4 %>%
 ## `geom_smooth()` using formula 'y ~ x'
 ```
 
-![](OJ_files/figure-html/unnamed-chunk-29-1.png)<!-- -->
+![](OJ_files/figure-html/unnamed-chunk-23-1.png)<!-- -->
+
+### I decide to use units = 16 and 2 layers to run the model.
+
+
+```r
+model <- keras_model_sequential() %>% 
+  layer_dense(units = 16, activation = "relu", input_shape = ncol(OJ.train) ) %>% 
+  layer_dense(units = 16, activation = "relu") %>% 
+  layer_dense(units = 1, activation = "sigmoid")
+
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+system.time(history <- model %>% fit(
+  partial_OJ.train,
+  partial_OJ.train.label,
+  epochs = 100,
+  batch_size = 256,
+  validation_data = list(OJ.train_val, OJ.train_val.label)
+))
+```
+
+```
+##    user  system elapsed 
+##    4.81    0.08    4.45
+```
+
+
+```r
+str(history)
+```
+
+```
+## List of 2
+##  $ params :List of 3
+##   ..$ verbose: int 1
+##   ..$ epochs : int 100
+##   ..$ steps  : int 3
+##  $ metrics:List of 4
+##   ..$ loss        : num [1:100] 0.774 0.742 0.723 0.708 0.695 ...
+##   ..$ accuracy    : num [1:100] 0.579 0.589 0.599 0.603 0.61 ...
+##   ..$ val_loss    : num [1:100] 0.779 0.758 0.742 0.729 0.717 ...
+##   ..$ val_accuracy: num [1:100] 0.54 0.56 0.55 0.56 0.59 ...
+##  - attr(*, "class")= chr "keras_training_history"
+```
+
+
+```r
+plot(history)
+```
+
+```
+## `geom_smooth()` using formula 'y ~ x'
+```
+
+![](OJ_files/figure-html/unnamed-chunk-26-1.png)<!-- -->
+
+> I choose 56, run with 56 epochs and full training:
+
+
+```r
+model <- keras_model_sequential() %>% 
+  layer_dense(units = 16, activation = "relu", input_shape = ncol(OJ.train) ) %>% 
+  layer_dense(units = 16, activation = "relu") %>% 
+  layer_dense(units = 1, activation = "sigmoid")
+
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+system.time(history <- model %>% fit(
+  OJ.train,
+  OJ.train.label,
+  epochs = 56,
+  batch_size = 256
+))
+```
+
+```
+##    user  system elapsed 
+##    1.08    0.02    0.92
+```
+
+
+
+```r
+plot(history)
+```
+
+```
+## `geom_smooth()` using formula 'y ~ x'
+```
+
+![](OJ_files/figure-html/unnamed-chunk-28-1.png)<!-- -->
+
+
+
+```r
+results <- model %>% evaluate(OJ.test, OJ.test.label)
+
+results
+```
+
+```
+##      loss  accuracy 
+## 0.3480776 0.8481482
+```
+
+> Accuracy is 84.81%, which is a little bit better than the trees (82.59%).
