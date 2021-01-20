@@ -85,7 +85,7 @@ use_condaenv("r-reticulate")
 > prepare label
 
 ```{r}
-OJ.train.label <- OJ.train %>% select(Purchase) %>% mutate(Purchase=ifelse(Purchase=="CH", 0, 1)) %>% pull(Purchase)
+OJ.train.label <- OJ.train %>% select(Purchase) %>% mutate(Purchase=ifelse(Purchase=="CH", 0, 1)) %>% pull(Purchase) # pull take it out as a vector, the same as oj[["purchase"]]
 str(OJ.train.label)
 OJ.test.label <- OJ.test %>% select(Purchase) %>% mutate(Purchase=ifelse(Purchase=="CH", 0, 1)) %>% pull(Purchase)
 str(OJ.test.label)
@@ -122,16 +122,27 @@ val_indices <- sample(1:nrow(OJ.train), size = 100)
 OJ.train_val <- OJ.train[val_indices,]
 partial_OJ.train <- OJ.train[-val_indices,]
 
+# class(OJ.train) # to know the 
+
 # OJ.test <- data.matrix(OJ.test, rownames.force = NA)
 # OJ.train <- data.matrix(OJ.train, rownames.force = NA)
 # OJ.train_val <- data.matrix(OJ.train_val, rownames.force = NA)
 # partial_OJ.train <- data.matrix(partial_OJ.train, rownames.force = NA)
+
+# matrix and dataframe are different
+# matrix need to be the same element (as )
 
 OJ.train_val.label <- OJ.train.label[val_indices]
 partial_OJ.train.label <- OJ.train.label[-val_indices]
 
 dim(OJ.train_val)
 dim(partial_OJ.train)
+
+class(OJ.train_val)
+class(partial_OJ.train)
+class(OJ.train_val.label)
+class(partial_OJ.train.label)
+
 str(OJ.train_val)
 str(partial_OJ.train)
 str(OJ.train_val.label)
@@ -337,3 +348,6 @@ results
 ```
 
 > Accuracy is 84.81%, which is a little bit better than the trees (82.59%).
+
+# batch size also power of 2
+# smaller train better, but also slower
