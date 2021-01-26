@@ -118,7 +118,7 @@ folds <- cut(indices, breaks = k, labels = FALSE) # divide the ordered indices i
 ```
 
 ```{r kfold100, cache = T}
-num_epochs <- 100
+num_epochs <- 10
 all_scores <- c() # An empty vector to store the results from evaluation
 
 for (i in 1:k) {
@@ -142,7 +142,7 @@ for (i in 1:k) {
   network %>% fit(partial_train_data,
                   partial_train_targets,
                   epochs = num_epochs,
-                  batch_size = 1,
+                  batch_size = 16,
                   verbose = 0)
                 
   # Evaluate the model on the validation data
@@ -170,7 +170,7 @@ K$clear_session()
 Train our the models:
 
 ```{r kfold500, echo = T, results = 'hide', cache = T}
-num_epochs <- 500
+num_epochs <- 50
 all_mae_histories <- NULL # an empty object to cumulatively store the model metrics
 
 for (i in 1:k) {
@@ -193,7 +193,7 @@ for (i in 1:k) {
                            partial_train_targets,
                            validation_data = list(val_data, val_targets),
                            epochs = num_epochs, 
-                           batch_size = 1, 
+                           batch_size = 16, 
                            verbose = 0
   )
   mae_history <- history$metrics$val_mae
@@ -254,7 +254,7 @@ c(c(train_data, train_targets), c(test_data, test_targets)) %<-% dataset_boston_
 K <- backend()
 K$clear_session()
 
-num_epochs <- 500
+num_epochs <- 50
 all_mae_histories <- NULL # an empty object to cumulatively store the model metrics
 
 for (i in 1:k) {
@@ -277,7 +277,7 @@ for (i in 1:k) {
                            partial_train_targets,
                            validation_data = list(val_data, val_targets),
                            epochs = num_epochs, 
-                           batch_size = 1, 
+                           batch_size = 16, 
                            verbose = 0
   )
   mae_history <- history$metrics$val_mae
@@ -341,7 +341,7 @@ test_data <- apply(test_data, 2, function(x) (x-min(x))/(max(x)-min(x)))
 K <- backend()
 K$clear_session()
 
-num_epochs <- 500
+num_epochs <- 50
 all_mae_histories <- NULL # an empty object to cumulatively store the model metrics
 
 for (i in 1:k) {
@@ -364,7 +364,7 @@ for (i in 1:k) {
                            partial_train_targets,
                            validation_data = list(val_data, val_targets),
                            epochs = num_epochs, 
-                           batch_size = 1, 
+                           batch_size = 16, 
                            verbose = 0
   )
   mae_history <- history$metrics$val_mae

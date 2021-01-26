@@ -10,6 +10,7 @@ library(keras)
 library(reticulate)
 library(tensorflow)
 library(tidyverse)
+library(janitor)
 use_condaenv("r-reticulate")
 ```
 
@@ -20,5 +21,230 @@ parkinsons <- readr::read_csv("C:/Users/sandy/rclub/Deep_learning_data/Parkinson
 dim(parkinsons)
 head(parkinsons)
 ```
-### prepare data
+### prepare data and label
+
+```{r}
+parkinsons <- janitor::clean_names(parkinsons)
+parkinsons
+str(parkinsons)
+```
+
+#### check data are evenly distributed across subject
+
+```{r}
+table(parkinsons$subject_number)
+library(ggplot2)
+parkinsons$subject_number %>% 
+  plyr::count() %>%
+  ggplot(aes(x, freq)) +
+  geom_col()
+```
+
+#### prepare train and test data
+
+```{r}
+parkinsons_test <- parkinsons %>% 
+  filter(between(subject_number, 1, 10)) %>% 
+  arrange(subject_number)
+str(parkinsons_test)
+
+parkinsons_train <- parkinsons %>% 
+  filter(between(subject_number, 11, 42)) %>% 
+  arrange(subject_number)
+str(parkinsons_train)
+```
+
+#### prepare data
+
+```{r}
+parkinsons_test_data <- parkinsons_test %>% 
+  select(-c("subject_number","age","sex","test_time","motor_updrs","total_updrs"))
+parkinsons_test_data
+str(parkinsons_test_data)
+dim(parkinsons_test_data)
+
+parkinsons_train_data <- parkinsons_train %>% 
+  select(-c("subject_number","age","sex","test_time","motor_updrs","total_updrs"))
+parkinsons_train_data
+str(parkinsons_train_data)
+dim(parkinsons_train_data)
+```
+
+```{r}
+# novariation_train <- apply(parkinsons_train_data, 2, sd)==0
+# parkinsons_train_rm <- parkinsons_train_data[,!novariation_train]
+# parkinsons_test_rm <- parkinsons_test_data[,!novariation_train]
+# dim(parkinsons_train_rm)
+# dim(parkinsons_test_rm)
+```
+> nothing to remove
+
+#### scale
+
+```{r}
+parkinsons_mean <- apply(parkinsons_train_data, 2, mean)
+parkinsons_std <- apply(parkinsons_train_data, 2, sd)
+
+parkinsons.train <- scale(parkinsons_train_data, center = parkinsons_mean, scale = parkinsons_std)
+parkinsons.test <- scale(parkinsons_test_data, center = parkinsons_mean, scale = parkinsons_std)
+
+str(parkinsons.train)
+str(parkinsons.test)
+```
+
+#### prepare labels
+
+```{r}
+parkinsons.test_labelm <- parkinsons_test$motor_updrs 
+str(parkinsons.test_labelm)
+
+parkinsons.test_labelt <- parkinsons_test$total_updrs 
+str(parkinsons.test_labelt)
+
+parkinsons.train_labelm <- parkinsons_train$motor_updrs 
+str(parkinsons.train_labelm)
+
+parkinsons.train_labelt <- parkinsons_train$total_updrs 
+str(parkinsons.train_labelt)
+```
+
+### Define the model as a function
+
+```{r}
+build_model <- function() {
+  network <- keras_model_sequential() %>% 
+    layer_dense(units = 64, activation = "relu", input_shape = 16) %>% 
+    layer_dense(units = 64, activation = "relu") %>% 
+    layer_dense(units = 1) 
+    
+  network %>% compile(
+    optimizer = "rmsprop", 
+    loss = "mse", 
+    metrics = c("mae")
+  )
+}
+```
+
+### k-fold cross validation
+
+```{r setkFold, echo = TRUE, results = 'hide'}
+set.seed(1)
+k <- 4 # four groups
+indices <- sample(1:nrow(parkinsons.train)) # randomize the training set before splitting for k-fold cross validation:
+folds <- cut(indices, breaks = k, labels = FALSE) # divide the ordered indices into k intervals, labelled 1:k.
+```
+
+### Train the models with motor_updrs
+
+```{r kfold100, cache = T}
+num_epochs <- 100
+all_scores <- c() # An empty vector to store the results from evaluation
+
+for (i in 1:k) {
+  cat("processing fold #", i, "\n")
+  # Prepare the validation data: data from partition # k
+  val_indices <- which(folds == i, arr.ind = TRUE) 
+  
+  # validation set: the ith partition
+  val_data <- parkinsons.train[val_indices,]
+  val_targets <- parkinsons.train_labelm[val_indices]
+  
+  # Training set: all other partitions
+  partial_parkinsons.train <- parkinsons.train[-val_indices,]
+  partial_parkinsons.train_labelm <- parkinsons.train_labelm[-val_indices]
+  
+  # Call our model function (see above)
+  network <- build_model()
+  
+  # summary(model)
+  # Train the model (in silent mode, verbose=0)
+  network %>% fit(partial_parkinsons.train,
+                  partial_parkinsons.train_labelm,
+                  epochs = num_epochs,
+                  batch_size = 16,
+                  verbose = 0)
+                
+  # Evaluate the model on the validation data
+  results <- network %>% evaluate(val_data, val_targets, verbose = 0)
+  all_scores <- c(all_scores, results["mae"])
+}  
+```
+We get 4 mae values
+
+```{r allscores}
+all_scores
+```
+
+```{r kfold500, echo = T, results = 'hide', cache = T}
+num_epochs <- 500
+all_mae_histories <- NULL # an empty object to cumulatively store the model metrics
+
+for (i in 1:k) {
+  cat("processing fold #", i, "\n")
+  
+  # Prepare the validation data: data from partition # k
+  val_indices <- which(folds == i, arr.ind = TRUE)
+  val_data <- parkinsons.train[val_indices,]
+  val_targets <- parkinsons.train_labelm[val_indices]
+  
+  # Prepare the training data: data from all other partitions
+  partial_parkinsons.train <- parkinsons.train[-val_indices,]
+  partial_parkinsons.train_labelm <- parkinsons.train_labelm[-val_indices]
+  
+  # Build the Keras model (already compiled)
+  model <- build_model()
+  
+  # Train the model (in silent mode, verbose=0)
+  history <- model %>% fit(partial_parkinsons.train, 
+                           partial_parkinsons.train_labelm,
+                           validation_data = list(val_data, val_targets),
+                           epochs = num_epochs, 
+                           batch_size = 16,
+                           verbose = 0
+  )
+  mae_history <- history$metrics$val_mae
+  all_mae_histories <- rbind(all_mae_histories, mae_history)
+}
+```
+
+#### Calculate the average per-epoch MAE score for all folds
+
+```{r plot1}
+average_mae_history <- data.frame(
+  epoch = seq(1:ncol(all_mae_histories)),
+  validation_mae = apply(all_mae_histories, 2, mean)
+)
+
+p <- ggplot(average_mae_history, aes(x = epoch, y = validation_mae))
+
+p + 
+  geom_point()
+
+p + 
+  geom_smooth(method = 'loess', se = FALSE)
+```
+
+#### train a final "production" model on all of the training data, with the best parameters 200, then look at its performance on the test data:
+
+```{r runZ, echo = F, results = 'hide', cache = T}
+# Get a fresh, compiled model.
+model <- build_model()
+
+# Train it on the entirety of the data.
+model %>% fit(parkinsons.train, 
+              parkinsons.train_labelm,
+              epochs = 200, 
+              batch_size = 16, 
+              verbose = 0)
+
+result <- model %>% evaluate(parkinsons.test, parkinsons.test_labelm)
+```
+
+```{r resultsZ}
+result
+```
+
+```{r}
+round(result["mae"] * 1000)
+```
 
