@@ -1,0 +1,24 @@
+---
+title: "Parkinsons"
+author: "Min-Yao"
+date: "1/24/2021"
+output: html_document
+---
+
+```{r}
+library(keras)
+library(reticulate)
+library(tensorflow)
+library(tidyverse)
+use_condaenv("r-reticulate")
+```
+
+### load data
+
+```{r}
+parkinsons <- readr::read_csv("C:/Users/sandy/rclub/Deep_learning_data/Parkinsons/parkinsons_updrs.data.csv")
+dim(parkinsons)
+head(parkinsons)
+```
+### prepare data
+
