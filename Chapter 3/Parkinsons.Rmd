@@ -2,7 +2,9 @@
 title: "Parkinsons"
 author: "Min-Yao"
 date: "1/24/2021"
-output: html_document
+output: 
+  html_document: 
+    keep_md: yes
 ---
 
 ```{r}
@@ -111,12 +113,23 @@ str(parkinsons.train_labelt)
 ### Define the model as a function
 
 ```{r}
-build_model <- function() {
+build_model <- function(nlayers, powerto) {
+  # input layer
   network <- keras_model_sequential() %>% 
-    layer_dense(units = 64, activation = "relu", input_shape = 16) %>% 
-    layer_dense(units = 64, activation = "relu") %>% 
+    layer_dense(units = 2^powerto, activation = "relu", input_shape = ncol(parkinsons.train)) 
+    
+  # additional layers
+  if (nlayers>1) {
+  map(2:nlayers, ~ network %>% 
+        layer_dense(units = 2^powerto, activation = "relu")
+  )
+  }
+    
+  # output layer
+  network %>% 
     layer_dense(units = 1) 
     
+  # compile it
   network %>% compile(
     optimizer = "rmsprop", 
     loss = "mse", 
@@ -131,10 +144,13 @@ build_model <- function() {
 set.seed(1)
 k <- 4 # four groups
 indices <- sample(1:nrow(parkinsons.train)) # randomize the training set before splitting for k-fold cross validation:
+#indices <- 1:nrow(parkinsons.train) #no randomize
 folds <- cut(indices, breaks = k, labels = FALSE) # divide the ordered indices into k intervals, labelled 1:k.
 ```
 
-### Train the models with motor_updrs
+### Train the models with motor_updrs, try different hyperparamaters
+
+#### 2 layer, units = 64
 
 ```{r kfold100, cache = T}
 num_epochs <- 100
@@ -154,7 +170,7 @@ for (i in 1:k) {
   partial_parkinsons.train_labelm <- parkinsons.train_labelm[-val_indices]
   
   # Call our model function (see above)
-  network <- build_model()
+  network <- build_model(2,6)
   
   # summary(model)
   # Train the model (in silent mode, verbose=0)
@@ -175,6 +191,89 @@ We get 4 mae values
 all_scores
 ```
 
+#### 1 layer, units = 64
+
+```{r kfold100, cache = T}
+num_epochs <- 300
+all_scores <- c() # An empty vector to store the results from evaluation
+
+for (i in 1:k) {
+  cat("processing fold #", i, "\n")
+  # Prepare the validation data: data from partition # k
+  val_indices <- which(folds == i, arr.ind = TRUE) 
+  
+  # validation set: the ith partition
+  val_data <- parkinsons.train[val_indices,]
+  val_targets <- parkinsons.train_labelm[val_indices]
+  
+  # Training set: all other partitions
+  partial_parkinsons.train <- parkinsons.train[-val_indices,]
+  partial_parkinsons.train_labelm <- parkinsons.train_labelm[-val_indices]
+  
+  # Call our model function (see above)
+  network <- build_model(1,6)
+  
+  # summary(model)
+  # Train the model (in silent mode, verbose=0)
+  network %>% fit(partial_parkinsons.train,
+                  partial_parkinsons.train_labelm,
+                  epochs = num_epochs,
+                  batch_size = 16,
+                  verbose = 0)
+                
+  # Evaluate the model on the validation data
+  results <- network %>% evaluate(val_data, val_targets, verbose = 0)
+  all_scores <- c(all_scores, results["mae"])
+}  
+```
+We get 4 mae values
+
+```{r allscores}
+all_scores
+```
+
+#### 2 layer, units = 32
+
+```{r kfold100, cache = T}
+num_epochs <- 100
+all_scores <- c() # An empty vector to store the results from evaluation
+
+for (i in 1:k) {
+  cat("processing fold #", i, "\n")
+  # Prepare the validation data: data from partition # k
+  val_indices <- which(folds == i, arr.ind = TRUE) 
+  
+  # validation set: the ith partition
+  val_data <- parkinsons.train[val_indices,]
+  val_targets <- parkinsons.train_labelm[val_indices]
+  
+  # Training set: all other partitions
+  partial_parkinsons.train <- parkinsons.train[-val_indices,]
+  partial_parkinsons.train_labelm <- parkinsons.train_labelm[-val_indices]
+  
+  # Call our model function (see above)
+  network <- build_model(2,5)
+  
+  # summary(model)
+  # Train the model (in silent mode, verbose=0)
+  network %>% fit(partial_parkinsons.train,
+                  partial_parkinsons.train_labelm,
+                  epochs = num_epochs,
+                  batch_size = 16,
+                  verbose = 0)
+                
+  # Evaluate the model on the validation data
+  results <- network %>% evaluate(val_data, val_targets, verbose = 0)
+  all_scores <- c(all_scores, results["mae"])
+}  
+```
+
+```{r allscores}
+all_scores
+```
+
+#### I decided to use 2 layer, units = 64
+
 ```{r kfold500, echo = T, results = 'hide', cache = T}
 num_epochs <- 500
 all_mae_histories <- NULL # an empty object to cumulatively store the model metrics
@@ -192,7 +291,7 @@ for (i in 1:k) {
   partial_parkinsons.train_labelm <- parkinsons.train_labelm[-val_indices]
   
   # Build the Keras model (already compiled)
-  model <- build_model()
+  model <- build_model(2,6)
   
   # Train the model (in silent mode, verbose=0)
   history <- model %>% fit(partial_parkinsons.train, 
@@ -228,7 +327,7 @@ p +
 
 ```{r runZ, echo = F, results = 'hide', cache = T}
 # Get a fresh, compiled model.
-model <- build_model()
+model <- build_model(2,6)
 
 # Train it on the entirety of the data.
 model %>% fit(parkinsons.train, 
@@ -248,3 +347,160 @@ result
 round(result["mae"] * 1000)
 ```
 
+### Train the models with total_updrs, try different hyperparamaters
+
+#### 2 layer, units = 64
+
+```{r kfold100, cache = T}
+num_epochs <- 500
+all_scores <- c() # An empty vector to store the results from evaluation
+
+for (i in 1:k) {
+  cat("processing fold #", i, "\n")
+  # Prepare the validation data: data from partition # k
+  val_indices <- which(folds == i, arr.ind = TRUE) 
+  
+  # validation set: the ith partition
+  val_data <- parkinsons.train[val_indices,]
+  val_targets <- parkinsons.train_labelt[val_indices]
+  
+  # Training set: all other partitions
+  partial_parkinsons.train <- parkinsons.train[-val_indices,]
+  partial_parkinsons.train_labelt <- parkinsons.train_labelt[-val_indices]
+  
+  # Call our model function (see above)
+  network <- build_model(2,6)
+  
+  # summary(model)
+  # Train the model (in silent mode, verbose=0)
+  network %>% fit(partial_parkinsons.train,
+                  partial_parkinsons.train_labelt,
+                  epochs = num_epochs,
+                  batch_size = 16,
+                  verbose = 0)
+                
+  # Evaluate the model on the validation data
+  results <- network %>% evaluate(val_data, val_targets, verbose = 0)
+  all_scores <- c(all_scores, results["mae"])
+}  
+```
+We get 4 mae values
+
+```{r allscores}
+all_scores
+```
+
+#### 1 layer, units = 64
+
+```{r kfold100, cache = T}
+num_epochs <- 500
+all_scores <- c() # An empty vector to store the results from evaluation
+
+for (i in 1:k) {
+  cat("processing fold #", i, "\n")
+  # Prepare the validation data: data from partition # k
+  val_indices <- which(folds == i, arr.ind = TRUE) 
+  
+  # validation set: the ith partition
+  val_data <- parkinsons.train[val_indices,]
+  val_targets <- parkinsons.train_labelt[val_indices]
+  
+  # Training set: all other partitions
+  partial_parkinsons.train <- parkinsons.train[-val_indices,]
+  partial_parkinsons.train_labelt <- parkinsons.train_labelt[-val_indices]
+  
+  # Call our model function (see above)
+  network <- build_model(1,6)
+  
+  # summary(model)
+  # Train the model (in silent mode, verbose=0)
+  network %>% fit(partial_parkinsons.train,
+                  partial_parkinsons.train_labelt,
+                  epochs = num_epochs,
+                  batch_size = 16,
+                  verbose = 0)
+                
+  # Evaluate the model on the validation data
+  results <- network %>% evaluate(val_data, val_targets, verbose = 0)
+  all_scores <- c(all_scores, results["mae"])
+}  
+```
+
+```{r allscores}
+all_scores
+```
+
+#### I decided to use 2 layer, units = 64
+
+```{r kfold500, echo = T, results = 'hide', cache = T}
+num_epochs <- 500
+all_mae_histories <- NULL # an empty object to cumulatively store the model metrics
+
+for (i in 1:k) {
+  cat("processing fold #", i, "\n")
+  
+  # Prepare the validation data: data from partition # k
+  val_indices <- which(folds == i, arr.ind = TRUE)
+  val_data <- parkinsons.train[val_indices,]
+  val_targets <- parkinsons.train_labelt[val_indices]
+  
+  # Prepare the training data: data from all other partitions
+  partial_parkinsons.train <- parkinsons.train[-val_indices,]
+  partial_parkinsons.train_labelt <- parkinsons.train_labelt[-val_indices]
+  
+  # Build the Keras model (already compiled)
+  model <- build_model(2,6)
+  
+  # Train the model (in silent mode, verbose=0)
+  history <- model %>% fit(partial_parkinsons.train, 
+                           partial_parkinsons.train_labelt,
+                           validation_data = list(val_data, val_targets),
+                           epochs = num_epochs, 
+                           batch_size = 16,
+                           verbose = 0
+  )
+  mae_history <- history$metrics$val_mae
+  all_mae_histories <- rbind(all_mae_histories, mae_history)
+}
+```
+
+#### Calculate the average per-epoch MAE score for all folds
+
+```{r plot1}
+average_mae_history <- data.frame(
+  epoch = seq(1:ncol(all_mae_histories)),
+  validation_mae = apply(all_mae_histories, 2, mean)
+)
+
+p <- ggplot(average_mae_history, aes(x = epoch, y = validation_mae))
+
+p + 
+  geom_point()
+
+p + 
+  geom_smooth(method = 'loess', se = FALSE)
+```
+
+#### train a final "production" model on all of the training data, with the best parameters 310, then look at its performance on the test data:
+
+```{r runZ, echo = F, results = 'hide', cache = T}
+# Get a fresh, compiled model.
+model <- build_model(2,6)
+
+# Train it on the entirety of the data.
+model %>% fit(parkinsons.train, 
+              parkinsons.train_labelt,
+              epochs = 310, 
+              batch_size = 16, 
+              verbose = 0)
+
+result <- model %>% evaluate(parkinsons.test, parkinsons.test_labelt)
+```
+
+```{r resultsZ}
+result
+```
+
+```{r}
+round(result["mae"] * 1000)
+```
