@@ -2,7 +2,9 @@
 title: "Abalone"
 author: "Min-Yao"
 date: "1/27/2021"
-output: html_document
+output: 
+  html_document: 
+    keep_md: yes
 ---
 
 ```{r}
@@ -185,12 +187,12 @@ history_2_5 %>%
 ```
 ## run the model
 
-### I decided to choose units = 32 & 2 layers to run the model.
+### I decided to choose units = 64 & 2 layers to run the model.
 
 ```{r}
 model <- keras_model_sequential() %>% 
-  layer_dense(units = 32, activation = "relu", input_shape = ncol(abalone.train) ) %>% 
-  layer_dense(units = 32, activation = "relu") %>% 
+  layer_dense(units = 64, activation = "relu", input_shape = ncol(abalone.train) ) %>% 
+  layer_dense(units = 64, activation = "relu") %>% 
   layer_dense(units = 28, activation = "softmax")
 
 
@@ -203,7 +205,7 @@ model %>% compile(
 system.time(history <- model %>% fit(
   abalone_data_part,
   abalone_label_part,
-  epochs = 54,
+  epochs = 50,
   batch_size = 64,
   validation_data = list(abalone_data_val, abalone_label_val)
 ))
@@ -224,8 +226,8 @@ plot(history)
 ```
 ```{r}
 model <- keras_model_sequential() %>% 
-  layer_dense(units = 32, activation = "relu", input_shape = ncol(abalone.train) ) %>% 
-  layer_dense(units = 32, activation = "relu") %>% 
+  layer_dense(units = 64, activation = "relu", input_shape = ncol(abalone.train) ) %>% 
+  layer_dense(units = 64, activation = "relu") %>% 
   layer_dense(units = 28, activation = "softmax")
 
 
@@ -238,7 +240,7 @@ model %>% compile(
 system.time(history <- model %>% fit(
   abalone.train,
   abalone_label_train,
-  epochs = 54,
+  epochs = 50,
   batch_size = 64
 ))
 ```
@@ -253,7 +255,5 @@ results <- model %>% evaluate(abalone.test, abalone_label_test)
 results
 ```
 
-```{r}
 
-```
 
