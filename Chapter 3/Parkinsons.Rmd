@@ -140,7 +140,7 @@ build_model <- function(nlayers, powerto) {
 
 ### k-fold cross validation
 
-```{r setkFold, echo = TRUE, results = 'hide'}
+```{r setkFold}
 set.seed(1)
 k <- 4 # four groups
 indices <- sample(1:nrow(parkinsons.train)) # randomize the training set before splitting for k-fold cross validation:
@@ -152,7 +152,7 @@ folds <- cut(indices, breaks = k, labels = FALSE) # divide the ordered indices i
 
 #### 2 layer, units = 64
 
-```{r kfold100, cache = T}
+```{r kfold100_m_2_64}
 num_epochs <- 100
 all_scores <- c() # An empty vector to store the results from evaluation
 
@@ -187,13 +187,13 @@ for (i in 1:k) {
 ```
 We get 4 mae values
 
-```{r allscores}
+```{r allscores_m_2_64}
 all_scores
 ```
 
 #### 1 layer, units = 64
 
-```{r kfold100, cache = T}
+```{r kfold300_m_1_64}
 num_epochs <- 300
 all_scores <- c() # An empty vector to store the results from evaluation
 
@@ -228,13 +228,13 @@ for (i in 1:k) {
 ```
 We get 4 mae values
 
-```{r allscores}
+```{r allscores_m_1_64}
 all_scores
 ```
 
 #### 2 layer, units = 32
 
-```{r kfold100, cache = T}
+```{r kfold100_m_2_32}
 num_epochs <- 100
 all_scores <- c() # An empty vector to store the results from evaluation
 
@@ -268,13 +268,13 @@ for (i in 1:k) {
 }  
 ```
 
-```{r allscores}
+```{r allscores_m_2_32}
 all_scores
 ```
 
 #### I decided to use 2 layer, units = 64
 
-```{r kfold500, echo = T, results = 'hide', cache = T}
+```{r kfold500_m_2_64}
 num_epochs <- 500
 all_mae_histories <- NULL # an empty object to cumulatively store the model metrics
 
@@ -308,7 +308,7 @@ for (i in 1:k) {
 
 #### Calculate the average per-epoch MAE score for all folds
 
-```{r plot1}
+```{r plot_500_m_2_64}
 average_mae_history <- data.frame(
   epoch = seq(1:ncol(all_mae_histories)),
   validation_mae = apply(all_mae_histories, 2, mean)
@@ -325,7 +325,7 @@ p +
 
 #### train a final "production" model on all of the training data, with the best parameters 200, then look at its performance on the test data:
 
-```{r runZ, echo = F, results = 'hide', cache = T}
+```{r runZ_m_2_64}
 # Get a fresh, compiled model.
 model <- build_model(2,6)
 
@@ -339,7 +339,7 @@ model %>% fit(parkinsons.train,
 result <- model %>% evaluate(parkinsons.test, parkinsons.test_labelm)
 ```
 
-```{r resultsZ}
+```{r resultsZ_m_2_64}
 result
 ```
 
@@ -351,8 +351,8 @@ round(result["mae"] * 1000)
 
 #### 2 layer, units = 64
 
-```{r kfold100, cache = T}
-num_epochs <- 500
+```{r kfold100_t_2_64}
+num_epochs <- 400
 all_scores <- c() # An empty vector to store the results from evaluation
 
 for (i in 1:k) {
@@ -386,14 +386,14 @@ for (i in 1:k) {
 ```
 We get 4 mae values
 
-```{r allscores}
+```{r allscores_t_2_64}
 all_scores
 ```
 
 #### 1 layer, units = 64
 
-```{r kfold100, cache = T}
-num_epochs <- 500
+```{r kfold100_1_2_64}
+num_epochs <- 400
 all_scores <- c() # An empty vector to store the results from evaluation
 
 for (i in 1:k) {
@@ -432,7 +432,7 @@ all_scores
 
 #### I decided to use 2 layer, units = 64
 
-```{r kfold500, echo = T, results = 'hide', cache = T}
+```{r kfold500_t_2_64}
 num_epochs <- 500
 all_mae_histories <- NULL # an empty object to cumulatively store the model metrics
 
@@ -466,7 +466,7 @@ for (i in 1:k) {
 
 #### Calculate the average per-epoch MAE score for all folds
 
-```{r plot1}
+```{r plot1_500_t_2_64}
 average_mae_history <- data.frame(
   epoch = seq(1:ncol(all_mae_histories)),
   validation_mae = apply(all_mae_histories, 2, mean)
@@ -483,7 +483,7 @@ p +
 
 #### train a final "production" model on all of the training data, with the best parameters 310, then look at its performance on the test data:
 
-```{r runZ, echo = F, results = 'hide', cache = T}
+```{r runZ_500_t_2_64}
 # Get a fresh, compiled model.
 model <- build_model(2,6)
 
@@ -497,7 +497,7 @@ model %>% fit(parkinsons.train,
 result <- model %>% evaluate(parkinsons.test, parkinsons.test_labelt)
 ```
 
-```{r resultsZ}
+```{r resultsZ_500_t_2_64}
 result
 ```
 
