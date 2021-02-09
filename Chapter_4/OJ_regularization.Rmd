@@ -1,0 +1,513 @@
+---
+title: "OJ"
+author: "Min-Yao"
+date: "2021/1/16"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+## OJ
+
+```{r}
+library(tidyverse)
+library(ISLR)
+library(tree)
+data(OJ)
+OJ
+```
+
+```{r}
+head(OJ)
+summary(OJ)
+```
+
+```{r}
+OJ %>% 
+  select(StoreID, STORE) %>% 
+  head()
+```
+> StoreID and STORE are redundant
+> because store is categorical we need to turn that into a series of dummy variables.
+
+```{r}
+store_cat <- OJ %>% select(StoreID) %>%
+  mutate(row=1:nrow(.),data=1) %>%
+  pivot_wider(names_from=StoreID, 
+              values_from=data, 
+              values_fill=0, 
+              names_prefix="Store")
+head(store_cat)
+```
+
+```{r}
+OJ <- OJ %>% 
+  select(-StoreID, -STORE, -Store7) %>% 
+  cbind(store_cat) %>% 
+  select(-row)
+OJ
+```
+
+## (a) Create a training set containing a random sample of 800 observations, and a test set containing the remaining observations.
+
+```{r}
+set.seed(10)
+train <- sample(1:nrow(OJ), size = 800)
+OJ.train <- OJ[train,]
+OJ.test <- OJ[-train,]
+str(OJ.test)
+str(OJ.train)
+```
+
+## (b) Fit a tree to the training data, with Purchase as the response and the other variables as predictors. Use the summary() function to produce summary statistics about the tree, and describe the results obtained. What is the training error rate? How many terminal nodes does the tree have?
+
+```{r}
+tree.OJ=tree(Purchase~.,OJ,subset=train)
+summary(tree.OJ)
+```
+> Number of terminal nodes:  7
+
+> Misclassification error rate: 0.1775
+
+## (e) Predict the response on the test data, and produce a confusion matrix comparing the test labels to the predicted test labels. What is the test error rate?
+
+```{r}
+tree.pred=predict(tree.OJ,OJ.test,type="class")
+purchase.test=OJ.test$Purchase
+table(tree.pred,purchase.test)
+(135+88)/270
+1-((135+88)/270)
+```
+
+> Accuracy is 82.59%
+
+## Deep learning method
+
+```{r}
+library(keras)
+library(reticulate)
+library(tensorflow)
+use_condaenv("r-reticulate")
+```
+
+> prepare label
+
+```{r}
+OJ.train.label <- OJ.train %>% 
+  select(Purchase) %>% 
+  mutate(Purchase=ifelse(Purchase=="CH", 0, 1)) %>% 
+  pull(Purchase) # pull take it out as a vector, the same as oj[["purchase"]]
+str(OJ.train.label)
+
+OJ.test.label <- OJ.test %>% 
+  select(Purchase) %>% 
+  mutate(Purchase=ifelse(Purchase=="CH", 0, 1)) %>% 
+  pull(Purchase)
+str(OJ.test.label)
+```
+
+> prepare data
+
+```{r}
+OJ.train <- OJ.train %>% 
+  select(-Purchase)
+str(OJ.train)
+
+OJ.test <- OJ.test %>% 
+  select(-Purchase)
+str(OJ.test)
+```
+
+> scale data
+
+```{r}
+oj.mean <- apply(OJ.train, 2, mean)
+oj.std <- apply(OJ.train, 2, sd)
+
+OJ.train <- scale(OJ.train, center=oj.mean, scale=oj.std)
+OJ.test <- scale(OJ.test, center=oj.mean, scale=oj.std)
+
+str(OJ.train)
+str(OJ.test)
+```
+
+> Setting aside a validation set
+
+```{r}
+set.seed(10)
+val_indices <- sample(1:nrow(OJ.train), size = 100)
+
+OJ.train_val <- OJ.train[val_indices,]
+OJ.train_part <- OJ.train[-val_indices,]
+
+# class(OJ.train) # to know the 
+
+# OJ.test <- data.matrix(OJ.test, rownames.force = NA)
+# OJ.train <- data.matrix(OJ.train, rownames.force = NA)
+# OJ.train_val <- data.matrix(OJ.train_val, rownames.force = NA)
+# OJ.train_part <- data.matrix(OJ.train_part, rownames.force = NA)
+
+# matrix and dataframe are different
+# matrix need to be the same element
+
+OJ.train_val.label <- OJ.train.label[val_indices]
+OJ.train_part.label <- OJ.train.label[-val_indices]
+
+dim(OJ.train_val)
+dim(OJ.train_part)
+
+class(OJ.train_val)
+class(OJ.train_part)
+class(OJ.train_val.label)
+class(OJ.train_part.label)
+
+str(OJ.train_val)
+str(OJ.train_part)
+str(OJ.train_val.label)
+str(OJ.train_part.label)
+
+```
+
+## Try different hyperparamaters
+
+### variant 1: larger or smaller layers
+
+```{r}
+define_model <- function(powerto) {
+  network_int <- keras_model_sequential() %>% 
+    layer_dense(units = 2^powerto, activation = "relu", input_shape = ncol(OJ.train)) %>% 
+    layer_dense(units = 2^powerto, activation = "relu") %>% 
+    layer_dense(units = 1, activation = "sigmoid")
+  
+  network_int %>% compile(
+    optimizer = "rmsprop",
+    loss = "binary_crossentropy",
+    metrics = c("accuracy")
+  )
+}
+```
+
+```{r}
+run_model <- function(network, epochs) {
+  network %>% fit(
+    OJ.train_part,
+    OJ.train_part.label,
+    epochs = epochs,
+    batch_size = 256,
+    validation_data = list(OJ.train_val, OJ.train_val.label),
+    verbose = 0
+  )
+}
+```
+
+> units = 8
+
+```{r}
+define_model(3) %>%
+  run_model(100) -> history_3
+
+history_3 %>%
+  plot()
+```
+
+> units = 16
+
+```{r}
+define_model(4) %>%
+  run_model(100) -> history_4
+
+history_4 %>%
+  plot()
+```
+
+> units = 32
+
+```{r}
+define_model(5) %>%
+  run_model(100) -> history_5
+
+history_5 %>%
+  plot()
+```
+> units = 64
+
+```{r}
+define_model(6) %>%
+  run_model(100) -> history_6
+
+history_6 %>%
+  plot()
+```
+
+### variant 2: how many layers
+
+```{r}
+define_model <- function(nlayers, powerto) {
+  
+  # input layer
+  network <- keras_model_sequential() %>% 
+    layer_dense(units = 2^powerto, activation = "relu", input_shape = ncol(OJ.train)) 
+  
+  # additional layers
+  if (nlayers>1) {
+  map(2:nlayers, ~ network %>% 
+        layer_dense(units = 2^powerto, activation = "relu")
+  )
+  }
+  
+  # output layer
+  network %>% 
+    layer_dense(units = 1, activation = "sigmoid")
+  
+  # compile it
+  network %>% compile(
+    optimizer = "rmsprop",
+    loss = "binary_crossentropy",
+    metrics = c("accuracy")
+  )
+  
+}
+```
+
+> 1 layer, units = 16
+
+```{r}
+define_model(1,4) %>%
+  run_model(100) -> history_1_4
+
+history_1_4 %>%
+  plot()
+```
+
+> 2 layer, units = 16
+
+```{r}
+define_model(2,4) %>%
+  run_model(100) -> history_2_4
+
+history_2_4 %>%
+  plot()
+```
+
+> 3 layer, units = 16
+
+```{r}
+define_model(3,4) %>%
+  run_model(100) -> history_3_4
+
+history_3_4 %>%
+  plot()
+```
+
+### I decide to use units = 16 and 2 layers to run the model.
+
+```{r}
+model <- keras_model_sequential() %>% 
+  layer_dense(units = 16, activation = "relu", input_shape = ncol(OJ.train) ) %>% 
+  layer_dense(units = 16, activation = "relu") %>% 
+  layer_dense(units = 1, activation = "sigmoid")
+
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+system.time(history <- model %>% fit(
+  OJ.train_part,
+  OJ.train_part.label,
+  epochs = 300,
+  batch_size = 256,
+  validation_data = list(OJ.train_val, OJ.train_val.label),
+  verbose = 0
+))
+```
+
+```{r}
+str(history)
+```
+
+```{r}
+plot(history)
+```
+
+> I choose 56, run with 56 epochs and full training:
+
+```{r}
+model <- keras_model_sequential() %>% 
+  layer_dense(units = 16, activation = "relu", input_shape = ncol(OJ.train) ) %>% 
+  layer_dense(units = 16, activation = "relu") %>% 
+  layer_dense(units = 1, activation = "sigmoid")
+
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+system.time(history <- model %>% fit(
+  OJ.train,
+  OJ.train.label,
+  epochs = 56,
+  batch_size = 256,
+  verbose = 0
+))
+```
+
+
+```{r}
+plot(history)
+```
+
+
+```{r}
+results <- model %>% evaluate(OJ.test, OJ.test.label)
+
+results
+```
+
+> Accuracy is 83.33%, which is a little bit better than the trees (82.59%).
+
+### batch size also need to be power of 2
+### smaller train batch size is better, but also slower
+
+# regulation
+
+# Fighting overfitting
+
+## Reducing the network's size
+
+### Now let's try to replace it with this smaller network. I decide to use units = 8 and 2 layers to run the model.
+
+```{r}
+model <- keras_model_sequential() %>% 
+  layer_dense(units = 8, activation = "relu", input_shape = ncol(OJ.train) ) %>% 
+  layer_dense(units = 8, activation = "relu") %>% 
+  layer_dense(units = 1, activation = "sigmoid")
+
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+system.time(history <- model %>% fit(
+  OJ.train_part,
+  OJ.train_part.label,
+  epochs = 300,
+  batch_size = 256,
+  validation_data = list(OJ.train_val, OJ.train_val.label),
+  verbose = 0
+))
+```
+
+```{r}
+plot(history)
+```
+> I choose 150, run with 150 epochs and full training:
+
+```{r}
+model <- keras_model_sequential() %>% 
+  layer_dense(units = 8, activation = "relu", input_shape = ncol(OJ.train) ) %>% 
+  layer_dense(units = 8, activation = "relu") %>% 
+  layer_dense(units = 1, activation = "sigmoid")
+
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+system.time(history <- model %>% fit(
+  OJ.train,
+  OJ.train.label,
+  epochs = 150,
+  batch_size = 256,
+  verbose = 0
+))
+```
+```{r}
+plot(history)
+```
+```{r}
+results <- model %>% evaluate(OJ.test, OJ.test.label)
+
+results
+```
+
+> Accuracy is 85.55%, which is a little bit better than original model 83.33%
+
+## Adding dropout
+
+```{r}
+model <- keras_model_sequential() %>% 
+  layer_dense(units = 16, activation = "relu", input_shape = ncol(OJ.train) ) %>% 
+  layer_dropout(rate = 0.6) %>%
+  layer_dense(units = 16, activation = "relu") %>% 
+  layer_dropout(rate = 0.6) %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+system.time(history <- model %>% fit(
+  OJ.train_part,
+  OJ.train_part.label,
+  epochs = 300,
+  batch_size = 256,
+  validation_data = list(OJ.train_val, OJ.train_val.label),
+  verbose = 0
+))
+```
+
+```{r}
+plot(history)
+```
+> I choose 200, run with 200 epochs and full training:
+
+```{r}
+model <- keras_model_sequential() %>% 
+  layer_dense(units = 16, activation = "relu", input_shape = ncol(OJ.train) ) %>% 
+  layer_dropout(rate = 0.6) %>%
+  layer_dense(units = 16, activation = "relu") %>% 
+  layer_dropout(rate = 0.6) %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+
+model %>% compile(
+  optimizer = "rmsprop",
+  loss = "binary_crossentropy",
+  metrics = c("accuracy")
+)
+
+system.time(history <- model %>% fit(
+  OJ.train,
+  OJ.train.label,
+  epochs = 200,
+  batch_size = 256,
+  verbose = 0
+))
+```
+
+```{r}
+plot(history)
+```
+
+```{r}
+results <- model %>% evaluate(OJ.test, OJ.test.label)
+
+results
+```
+
+> Accuracy is 85.18%, which is a little bit better than original model 83.33%
+
+
+
