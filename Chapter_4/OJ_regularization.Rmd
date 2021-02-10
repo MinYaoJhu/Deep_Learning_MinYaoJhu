@@ -368,7 +368,7 @@ results <- model %>% evaluate(OJ.test, OJ.test.label)
 results
 ```
 
-> Accuracy is 83.33%, which is a little bit better than the trees (82.59%).
+> Accuracy is 85.18%, which is a little bit better than the trees (82.59%).
 
 ### batch size also need to be power of 2
 ### smaller train batch size is better, but also slower
@@ -439,7 +439,7 @@ results <- model %>% evaluate(OJ.test, OJ.test.label)
 results
 ```
 
-> Accuracy is 85.55%, which is a little bit better than original model 83.33%
+> Accuracy is 85.92%, which is a little bit better than original model 85.18%
 
 ## Adding dropout
 
@@ -507,7 +507,28 @@ results <- model %>% evaluate(OJ.test, OJ.test.label)
 results
 ```
 
-> Accuracy is 85.18%, which is a little bit better than original model 83.33%
+> Accuracy is 85.55%, which is a little bit better than original model 85.18%
 
+### some pattern just associate it in random change
+### it's important to not let model greb too much
+### (Chapter 6)[https://www.dataschool.io/15-hours-of-expert-machine-learning-videos/]
 
+### different from adding 0 for missing data 
+### not one to one 
+### different coefficitent
+### for each batch dropout different coefficitent
+### 
 
+> with dropout method, it's like trying different model 
+
+> only scale using the info from small train set
+
+> batch normalization
+
+> new function: layer batch normalization 
+
+> x size of prdictor
+> y penalty
+
+L2 far from 0 pen increase -> larger number of small coefficent (complex model)
+L1 small -> allow larger coefficent (simple model)
