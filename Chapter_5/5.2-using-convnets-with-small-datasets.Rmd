@@ -353,7 +353,7 @@ train_generator <- flow_images_from_directory(
   train_dir,
   datagen,
   target_size = c(150, 150),
-  batch_size = 32,
+  batch_size = 20,
   class_mode = "binary"
 )
 
@@ -361,7 +361,7 @@ validation_generator <- flow_images_from_directory(
   validation_dir,
   test_datagen,
   target_size = c(150, 150),
-  batch_size = 32,
+  batch_size = 20,
   class_mode = "binary"
 )
 
