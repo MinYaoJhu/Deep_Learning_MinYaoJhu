@@ -13,7 +13,24 @@ knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
 library(keras)
 
 # define the directories:
-source("def_dir.R")
+# source("def_dir.R")
+
+original_dataset_dir <- "C:/Users/sandy/rclub/Deep_learning_data/dogs-vs-cats/train"
+
+base_dir <- "C:/Users/sandy/rclub/Deep_learning_data/dogs-vs-cats_small"
+
+train_dir <- file.path(base_dir, "train")
+validation_dir <- file.path(base_dir, "validation")
+test_dir <- file.path(base_dir, "test")
+
+train_cats_dir <- file.path(train_dir, "cats")
+train_dogs_dir <- file.path(train_dir, "dogs")
+
+validation_cats_dir <- file.path(validation_dir, "cats")
+validation_dogs_dir <- file.path(validation_dir, "dogs")
+
+test_cats_dir <- file.path(test_dir, "cats")
+test_dogs_dir <- file.path(test_dir, "dogs")
 ```
 
 # Obtain a pre-trained convnet base
