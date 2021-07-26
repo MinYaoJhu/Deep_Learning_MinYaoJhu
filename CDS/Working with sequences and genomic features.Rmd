@@ -1,0 +1,179 @@
+---
+title: "Working with sequences and genomic features"
+author: "Min-Yao"
+date: "7/26/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# DNA sequences and genomic ranges
+
+```{r}
+library(Biostrings)     # Provides DNAString, DNAStringSet, etc
+library(BSgenome)       # Provides getSeq()
+library(GenomicRanges)  # Provides GRanges, etc
+library(rtracklayer)    # Provides import() and export()
+```
+
+## DNAString
+
+Package Biostrings offers classes for storing DNA strings, DNAString, amino acid sequences, AAString, or anything else in a BString. These are very like character strings, but a variety of biologically meaningful functions can be applied to them.
+
+```{r}
+myseq <- DNAString("ACCATTGATTAT")
+myseq
+```
+
+```{r}
+class(myseq)
+```
+
+```{r}
+reverseComplement(myseq)
+```
+
+```{r}
+translate(myseq)
+```
+
+```{r}
+subseq(myseq, 3,5)
+```
+
+```{r}
+myseq[3:5]
+```
+
+```{r}
+as.character(myseq)
+```
+You can see a complete set of functions that work with DNAString with:
+
+```{r}
+methods(class="DNAString")
+```
+
+You can see get help on the DNAString class with:
+```{r}
+?"DNAString-class"
+```
+
+## DNAStringSet
+
+Often we want to work with a list of sequences, such as chromosomes.
+```{r}
+myset <- DNAStringSet( list(chrI=myseq, chrII=DNAString("ACGTACGT")) )
+myset
+```
+
+```{r}
+# A DNAStringSet is list-like
+myset$chrII
+```
+
+```{r}
+myset[["chrII"]]
+```
+
+```{r}
+myset[[2]]
+```
+
+## GRanges
+
+We may then wish to refer to regions of these sequences, often with an associated strand. This is done with the GRanges type. GRanges builds on IRanges, “integer ranges”. An IRanges has a starts and ends. A GRanges additionally has sequence names and strand information.
+
+```{r}
+range1 <- GRanges("chrI", IRanges(start=3,end=5), strand="+")
+range1
+```
+
+```{r}
+getSeq(myset, range1)
+```
+
+```{r}
+range2 <- GRanges("chrI", IRanges(start=3,end=5), strand="-")
+getSeq(myset, range2)
+```
+
+Accessing GRanges data:
+```{r}
+seqnames(range1)
+```
+
+```{r}
+start(range1)
+```
+
+```{r}
+end(range1)
+```
+
+```{r}
+strand(range1)
+```
+
+```{r}
+as.data.frame(range1)
+```
+
+```{r}
+# GRanges are sometimes like vectors:
+c(range1, range2)
+```
+
+```{r}
+# GRanges can have metadata columns, so they are also like data frames:
+mcols(range1)$wobble <- 10
+range1
+```
+
+```{r}
+mcols(range1)
+```
+
+```{r}
+range1$wobble
+```
+
+```{r}
+# A handy way to create a GRanges
+as("chrI:3-5:+", "GRanges")
+```
+
+# Loading files
+
+## Loading sequences
+
+DNA sequences are generally stored in FASTA format, a simple text format. These can be loaded with readDNAStringSet from Biostrings. Let’s load the genome of E. coli strain K-12, obtained from the Ensembl FTP site.
+
+```{r}
+seqs <- readDNAStringSet("AtSeqs/TAIR10_chr1.fas")
+seqs
+```
+
+```{r}
+# Our chromosome name is too verbose.
+# Remove everything from the name after the first space.
+names(seqs)
+```
+
+```{r}
+# Our chromosome name is too verbose.
+# Remove everything from the name after the first space.
+names(seqs)
+```
+
+```{r}
+features <- import("AtSeqs/TAIR10_GFF3_genes.gff")
+
+# Optional: just retain the columns of metadata we need
+mcols(features) <- mcols(features)[,c("type","gene_name","gene_id")]
+
+features
+```
+
