@@ -43,6 +43,11 @@ It's only necessary to run this once.
 
 ## Obtain data
 
+```{r}
+dataset_boston_housing()
+```
+
+
 ```{r data, warning = FALSE}
 c(c(train_data, train_targets), c(test_data, test_targets)) %<-% dataset_boston_housing()
 ```
