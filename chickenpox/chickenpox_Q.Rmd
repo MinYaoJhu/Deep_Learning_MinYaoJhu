@@ -1,0 +1,349 @@
+---
+title: "ChickenPox"
+author: "Min-Yao, Julin Maloof"
+date: "7/12/2021"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(keras)
+```
+
+
+The data consists of weekly chickenpox incident rates for every county in Hungary from 2005 to 2015
+
+The goal is to be able to predict chickenpox disease rates in the future
+
+The data set is at [UCI repository](https://archive.ics.uci.edu/ml/datasets/Hungarian+Chickenpox+Cases)
+
+Note that there are two data files.  `hungary_chickenpox.csv` has case counts per county.  `hungary_county_edges.csv` is an adjacency matrix indicating which counties abut one another, but I am not sure how to include this.
+
+Exercises:
+
+### 0. Do you want to center and scale?  If so don't forget to do it.
+
+> Yes
+
+### 1. plot the data in an informative way
+
+Get the data
+```{r}
+# if(!dir.exists("chickenpox")) {
+#   dir.create("chickenpox")
+#   download.file(url="https://archive.ics.uci.edu/ml/machine-learning-databases/00580/hungary_chickenpox.zip",
+#   destfile="chickenpox/hungary_chickenpox.zip")
+#   unzip("chickenpox/hungary_chickenpox.zip", exdir = "chickenpox")
+# } 
+```
+
+plot it
+```{r}
+pox <- read_csv("chickenpox/hungary_chickenpox.csv")
+```
+
+```{r}
+head(pox)
+```
+
+```{r}
+pox <- pox %>% 
+  mutate(Date = lubridate::dmy(Date),
+         year = lubridate::year(Date),
+         month = lubridate::month(Date),
+         week=lubridate::week(Date)) %>%
+  select(Date, week, month, year, everything())
+head(pox)
+```
+
+```{r}
+pox_long <- pox %>% pivot_longer(-c(Date, week, month, year), names_to = "county") 
+pox_long
+```
+
+### 1. plot the data in an informative way
+
+```{r}
+pox_long %>%
+  ggplot(aes(x=week, y=value, fill=county)) +
+  geom_area() +
+  facet_wrap(~ year)
+```
+
+```{r}
+pox_long %>%
+  ggplot(aes(x=month, y=value, color=county)) +
+  geom_area() +
+  facet_wrap(~ year)
+```
+
+```{r}
+pox_long %>%
+  ggplot(aes(x=year, y=value, color=county)) +
+  geom_area()
+```
+
+```{r}
+pox_long %>%
+  filter(county == "BUDAPEST") %>% 
+  ggplot(aes(x=week, y=value)) +
+  geom_area() +
+  facet_wrap(~ year)
+```
+
+scale and center.  Do each county separately.
+
+```{r}
+countymeans <- pox %>% 
+  filter(year < 2013) %>% 
+  summarize(across(.cols=c(-Date, -week, -month, -year), mean)) %>%
+  as.numeric()
+countymeans
+
+countysd <- pox %>% 
+  filter(year < 2013) %>% 
+  summarize(across(.cols=c(-Date, -week, -month, -year), sd)) %>%
+  as.numeric()
+countysd
+
+poxscale <- pox
+poxscale[,-1:-4] <- scale(pox[,-1:-4], center = countymeans, scale = countysd)
+head(poxscale)
+```
+
+did it work?
+```{r}
+poxscale %>% 
+  filter(year < 2013) %>% 
+  summarize(across(.cols=c(-Date, -week, -month, -year), mean)) 
+
+poxscale %>% 
+  filter(year < 2013) %>% 
+  summarize(across(.cols=c(-Date, -week, -month, -year), sd))
+```
+yes
+
+### 2. Because this is a small data set and we are just practicing we are not going to set up a test set, just training and validation.  Set up your generators or data so that training data is 2005-2012 and validation is 2013, 2014.
+
+
+#### method 1:
+```{r}
+train <- poxscale %>% 
+  filter(year < 2013) %>% 
+  select(-c(Date, week, month, year))
+train
+
+val <- poxscale %>% 
+  filter(year > 2012) %>% 
+  select(-c(Date, week, month, year))
+val
+```
+```{r}
+train_data <- train %>% 
+  select(-c(BUDAPEST)) %>% 
+  as.matrix()
+str(train_data)
+
+train_target <- train %>% 
+  select(c(BUDAPEST)) %>% 
+  pull()
+str(train_target)
+
+test_data <- val %>% 
+  select(-c(BUDAPEST)) %>% 
+  as.matrix()
+str(test_data)
+
+test_target <- val %>% 
+  select(c(BUDAPEST)) %>% 
+  pull()
+str(test_target)
+```
+
+
+```{r defModel}
+build_model <- function() {
+  network <- keras_model_sequential() %>% 
+    layer_dense(units = 64, activation = "relu", input_shape = 13) %>% 
+    layer_dense(units = 64, activation = "relu") %>% 
+    layer_dense(units = 1) 
+    
+  network %>% compile(
+    optimizer = "rmsprop", 
+    loss = "mse", 
+    metrics = c("mae")
+  )
+}
+```
+
+```{r}
+system.time(history <- network %>% fit(
+  train_data,
+  train_target,
+  epochs = 20,
+  batch_size = 32,
+  validation_data = list(test_data, test_target)
+))
+```
+
+
+
+
+#### method 2:
+
+```{r}
+data <- poxscale %>% 
+  select(-c(Date, week, month, year)) %>% 
+  as.matrix()
+head(data)
+```
+
+Now here is the data generator you'll use. It yields a list `(samples, targets)`, where `samples` is one batch of input data and `targets` is the corresponding array of target temperatures. It takes the following arguments:
+
+* `data` -- The original array of floating-point data.
+* `lookback` -- How many timesteps back the input data should go.
+* `delay` -- How many timesteps in the future the target should be.
+* `min_index` and `max_index` -- Indices in the `data` array that delimit which timesteps to draw from. This is useful for keeping a segment of the data for validation and another for testing.
+* `shuffle` -- Whether to shuffle the samples or draw them in chronological order.
+* `batch_size` -- The number of samples per batch.
+* `step` -- The period, in timesteps, at which you sample data. 
+
+```{r}
+generator <- function(data, lookback, delay, min_index, max_index,
+                      shuffle = FALSE, batch_size = 4, step = 2) {
+  if (is.null(max_index))
+    max_index <- nrow(data) - delay - 1
+  i <- min_index + lookback
+  function() {
+    if (shuffle) {
+      rows <- sample(c((min_index+lookback):max_index), size = batch_size)
+    } else {
+      if (i + batch_size >= max_index)
+        i <<- min_index + lookback
+      rows <- c(i:min(i+batch_size-1, max_index))
+      i <<- i + length(rows)
+    }
+    
+    samples <- array(0, dim = c(length(rows), 
+                                lookback / step,
+                                dim(data)[[-1]]))
+    targets <- array(0, dim = c(length(rows)))
+                     
+    for (j in 1:length(rows)) {
+      indices <- seq(rows[[j]] - lookback, rows[[j]], 
+                     length.out = dim(samples)[[2]])
+      samples[j,,] <- data[indices,]
+      targets[[j]] <- data[rows[[j]] + delay,1]
+    }            
+    
+    list(samples, targets)
+  }
+}
+```
+
+I will use the following parameter values:
+
+* `lookback = 20`, i.e. our observations will go back 20 weeks.
+* `steps = 2`, i.e. our observations will be sampled at one data point per hour.
+* `delay = 2`, i.e. our targets will be 2 weeks in the future.
+
+```{r}
+lookback <- 4
+step <- 1
+delay <- 2
+batch_size <- 16
+
+train_gen <- generator(
+  data,
+  lookback = lookback,
+  delay = delay,
+  min_index = 1,
+  max_index = 418,
+  shuffle = TRUE,
+  step = step, 
+  batch_size = batch_size
+)
+
+val_gen = generator(
+  data,
+  lookback = lookback,
+  delay = delay,
+  min_index = 419,
+  max_index = 522,
+  step = step,
+  batch_size = batch_size
+)
+
+# This is how many steps to draw from `val_gen`
+# in order to see the whole validation set:
+val_steps <- (522 - 419 - lookback) / batch_size
+val_steps
+```
+
+### 3. Predict chickenpox case # in Budapest 2 weeks in the future.  Be sure to include a baseline model for comparison.  
+
+#### A common sense, non-machine learning baseline
+
+```{r}
+  batch_maes <- c()
+  for (step in 1:val_steps) {
+    c(samples, targets) %<-% val_gen()
+    preds <- samples[,dim(samples)[[2]],1]
+    mae <- mean(abs(preds - targets))
+    batch_maes <- c(batch_maes, mae)
+  }
+  print(mean(batch_maes))
+```
+It yields a MAE of 0.5168.
+
+It translates to an average absolute error of `0.5168 * std` 
+
+## A basic machine learning approach
+
+```{r}
+### notes from class to set up good number for steps per epoch and validation steps
+
+#I am using a batch size of 2, so we should use
+418/2 #209 steps per epoch
+
+104/2 #52 validation steps
+```
+
+
+```{r, echo=TRUE, results='hide'}
+
+model <- keras_model_sequential() %>% 
+  layer_flatten(input_shape = c(lookback / step, dim(data)[-1])) %>% 
+  layer_dense(units = 32, activation = "relu") %>% 
+  layer_dense(units = 1)
+
+model %>% compile(
+  optimizer = optimizer_rmsprop(),
+  loss = "mae"
+)
+
+system.time(history <- model %>% fit(
+  train_gen,
+  steps_per_epoch = 200,
+  epochs = 10,
+  validation_data = val_gen,
+  validation_steps = val_steps
+))
+```
+
+```{r}
+plot(history)
+```
+
+### 4. Recode the data so that you can make predicition for all counties 2 weeks in the future.  Be sure to include a baseline model for comparison.
+
+Reformat for exercise 4:
+
+```{r}
+poxl <- poxscale %>% 
+  pivot_longer(-c(Date, week, month, year), names_to = "county", values_to = "cases") %>%
+  pivot_wider(id_cols = -county, names_from = county, values_from = county, values_fn = function(x) 1, values_fill = 0 )
+poxl 
+```
+
+### 5. If you are getting good predictions, how good can you do at 1 month?  If predictions are poor maybe try going down to 1 week.
