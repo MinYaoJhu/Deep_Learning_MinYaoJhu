@@ -3,7 +3,7 @@
 Welcome! 👋  
 This repository contains my **exercises, notes, and practice code** from working through *Deep Learning with R* by François Chollet with J. J. Allaire, published by Manning Publications.  
 
-Book link: [Deep Learning with R (2nd Edition)](https://www.manning.com/books/deep-learning-with-r)  
+Book link: [Deep Learning with R](https://www.manning.com/books/deep-learning-with-r)  
 
 ---
 
